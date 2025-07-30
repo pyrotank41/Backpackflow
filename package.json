@@ -1,0 +1,26 @@
+{
+  "name": "bagpackflow",
+  "version": "1.0.0",
+  "description": "A config-driven LLM framework built on top of PocketFlow",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "ts-node",
+    "test": "ts-node tests/test-pocketflow.ts",
+    "example": "ts-node examples/explore-pocketflow.ts",
+    "test:watch": "ts-node --watch tests/test-pocketflow.ts"
+  },
+  "keywords": ["llm", "workflow", "agents", "pocketflow", "config-driven"],
+  "author": "",
+  "license": "MIT",
+  "directories": {
+    "test": "tests"
+  },
+  "devDependencies": {
+    "@types/node": "^24.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
+  }
+}
