@@ -1,8 +1,8 @@
-# Phase 1 PRD: Configuration System for BagpackFlow
+# Phase 1 PRD: Configuration System for BackpackFlow
 
 ## Introduction/Overview
 
-BagpackFlow's Configuration System is a YAML-based workflow definition system that enables both junior developers and non-technical users to create LLM workflows without writing code. This system builds on top of PocketFlow's core architecture and provides a declarative way to define workflows, reducing code duplication and enabling rapid prototyping of LLM applications.
+BackpackFlow's Configuration System is a YAML-based workflow definition system that enables both junior developers and non-technical users to create LLM workflows without writing code. This system builds on top of PocketFlow's core architecture and provides a declarative way to define workflows, reducing code duplication and enabling rapid prototyping of LLM applications.
 
 **Problem Statement:** Currently, creating LLM workflows requires writing TypeScript code, which creates a barrier for non-technical users and slows down rapid prototyping for developers.
 

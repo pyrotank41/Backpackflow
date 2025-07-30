@@ -1,4 +1,4 @@
-// BagpackFlow - A config-driven LLM framework built on top of PocketFlow
+// BackpackFlow - A config-driven LLM framework built on top of PocketFlow
 export * from './pocketflow';
 
 // Re-export core PocketFlow classes for convenience

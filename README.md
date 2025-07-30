@@ -1,6 +1,6 @@
-# BagpackFlow
+# BackpackFlow
 
-A config-driven LLM framework built on top of [PocketFlow](https://github.com/The-Pocket/PocketFlow-Typescript). BagpackFlow extends PocketFlow with configuration-driven workflows, utility functions, and enhanced developer experience.
+A config-driven LLM framework built on top of [PocketFlow](https://github.com/The-Pocket/PocketFlow-Typescript). BackpackFlow extends PocketFlow with configuration-driven workflows, utility functions, and enhanced developer experience.
 
 ## Features
 
@@ -13,7 +13,7 @@ A config-driven LLM framework built on top of [PocketFlow](https://github.com/Th
 ## Project Structure
 
 ```
-bagpackflow/
+backpackflow/
 ├── src/                    # Source code
 │   ├── pocketflow.ts      # PocketFlow core (ported)
 │   └── index.ts           # Main entry point
