@@ -1,4 +1,4 @@
-// DANGER AREA:NEVER EDIT THIS FILE. The following code is owned by PocketFlow, and we want to maintain it as is.
+// DANGER AREA:NEVER EDIT THIS FILE. The following code was written by PocketFlow developer, and we want to maintain it as is.
 type NonIterableObject = Partial<Record<string, unknown>> & { [Symbol.iterator]?: never }; type Action = string;
 class BaseNode<S = unknown, P extends NonIterableObject = NonIterableObject> {
   protected _params: P = {} as P; protected _successors: Map<Action, BaseNode> = new Map();

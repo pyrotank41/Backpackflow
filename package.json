@@ -8,19 +8,35 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "start": "ts-node",
-    "test": "ts-node tests/test-pocketflow.ts",
-    "example": "ts-node examples/explore-pocketflow.ts",
-    "test:watch": "ts-node --watch tests/test-pocketflow.ts"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "example": "ts-node examples/explore-pocketflow.ts"
   },
-  "keywords": ["llm", "workflow", "agents", "pocketflow", "config-driven"],
+  "keywords": [
+    "llm",
+    "workflow",
+    "agents",
+    "pocketflow",
+    "config-driven"
+  ],
   "author": "",
   "license": "MIT",
   "directories": {
     "test": "tests"
   },
   "devDependencies": {
-    "@types/node": "^24.1.0",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.3.0",
+    "jest": "^30.0.5",
+    "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^2.0.19",
+    "ai": "^5.0.22",
+    "dotenv": "^17.2.1",
+    "openai": "^5.15.0",
+    "readline": "^1.3.0"
   }
 }
