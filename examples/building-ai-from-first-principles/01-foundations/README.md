@@ -22,10 +22,41 @@ Just **two files** that show the complete journey from learning to production:
 - **Why start here**: Learn prep → exec → post lifecycle without complexity
 - **Style**: Clean, focused, and easy to follow
 
+**Flow:**
+```mermaid
+graph LR
+    A["User Message"] --> B["ChatNode"] --> C["Assistant Message"]
+    
+    classDef userMsg fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef node fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
+    classDef aiMsg fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    
+    class A userMsg
+    class B node
+    class C aiMsg
+```
+
 ### 2. Interactive Terminal Chat (`terminal-chat.ts`)
 - **What it is**: A real interactive chatbot with persistent conversation history
 - **Why it matters**: Shows how SharedStorage maintains state across multiple interactions
 - **Features**: Commands (history, clear, exit), error handling, user-friendly interface
+
+**Flow:**
+```mermaid
+graph LR
+    T["💬 Terminal Input"] --> A["User Message"] --> B["ChatNode"] --> C["Assistant Message"]
+    C --> T
+    
+    classDef terminal fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef userMsg fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef node fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
+    classDef aiMsg fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    
+    class T terminal
+    class A userMsg
+    class B node
+    class C aiMsg
+```
 
 ## The Big Picture: Understanding PocketFlow 🌟
 
@@ -47,6 +78,24 @@ async function chatbot(message: string) {
 - Difficult to add features like retries, logging, or validation
 - Mixing concerns (data prep, API calls, result handling)
 - Not reusable across different use cases
+
+**Traditional vs PocketFlow:**
+```mermaid
+graph TB
+    subgraph Traditional["❌ Traditional Approach"]
+        T1["Everything Mixed Together"]
+    end
+    
+    subgraph PocketFlow["✅ PocketFlow Approach"]
+        P1["prep()"] --> P2["exec()"] --> P3["post()"]
+    end
+    
+    classDef traditional fill:#ffebee,stroke:#c62828,stroke-width:2px
+    classDef pocketflow fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
+    
+    class T1 traditional
+    class P1,P2,P3 pocketflow
+```
 
 PocketFlow solves this with a clear pattern:
 
@@ -78,11 +127,36 @@ type SharedStorage = {
 }
 ```
 
-This is how nodes communicate and maintain state across the entire workflow. Think of it as the "memory" of your AI system.
+This is the "memory" of your AI system - the center of everything in PocketFlow.
+
+```mermaid
+graph TD
+    S["SharedStorage<br/>(Center of Everything)"]
+    S <--> P["prep()<br/>reads & writes"]
+    P --> E["exec()<br/>isolated"]
+    S <--> Po["post()<br/>reads & writes"]
+    
+    classDef storage fill:#fff3e0,stroke:#f57c00,stroke-width:3px
+    classDef connected fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
+    classDef isolated fill:#ffebee,stroke:#c62828,stroke-width:2px
+    
+    class S storage
+    class P,Po connected
+    class E isolated
+```
 
 ### Step 2: Understanding the Node Lifecycle
 
 Every PocketFlow Node has three phases that work with the shared storage:
+
+```mermaid
+graph LR
+    A["prep()"] --> B["exec()"] --> C["post()"]
+    
+    classDef phase fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
+    
+    class A,B,C phase
+```
 
 ```typescript
 class ChatNode extends Node<SharedStorage> {
@@ -107,9 +181,14 @@ class ChatNode extends Node<SharedStorage> {
 ```
 
 **Why this separation matters:**
-- **Prep**: Data validation, formatting, context building
-- **Exec**: The actual AI call (or any heavy computation)
-- **Post**: Result processing, storage, error handling
+- **Prep**: Data validation, formatting, context building *(Extract & Transform)*
+- **Exec**: The actual AI call (or any heavy computation) *(Process)*
+- **Post**: Result processing, storage, error handling *(Load)*
+
+**💡 Think of it like ETL (Extract, Transform, Load):**
+- **prep()** = Extract data from SharedStorage + Transform it *(reads/writes SharedStorage)*
+- **exec()** = Process the transformed data *(isolated - no SharedStorage access)*
+- **post()** = Load results back into SharedStorage *(reads/writes SharedStorage)*
 
 ### Step 3: From Node to Flow
 
