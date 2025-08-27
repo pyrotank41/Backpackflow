@@ -1,14 +1,23 @@
 /**
  * Interactive Terminal Chat - Complete Chat Behavior
  * 
- * This builds on chat-completion.ts to show a real interactive chatbot.
- * It demonstrates:
+ * 🎯 This builds on chat-completion.ts to show a real interactive chatbot.
+ * 
+ * Key Learnings:
+ * • Same ChatNode works for both single interactions and ongoing conversations
+ * • SharedStorage accumulates conversation history automatically
+ * • The prep→exec→post pattern scales without modification
+ * • Error handling becomes crucial for user-facing applications
+ * 
+ * Features Demonstrated:
  * • Persistent conversation history using SharedStorage
  * • Interactive terminal interface with readline
  * • Commands like history, clear, exit
- * • Error handling and user experience features
+ * • Graceful error handling and user experience
+ * • Real-time typing indicators
  * 
- * Run: npx ts-node terminal-chat.ts
+ * 🚀 Run: npx tsx terminal-chat.ts
+ * 🔧 Debug: DEBUG_CHAT=true npx tsx terminal-chat.ts
  */
 
 import { config } from 'dotenv';
@@ -16,7 +25,7 @@ import path from 'path';
 config({ path: path.join(__dirname, '.env') });
 
 import * as readline from 'readline';
-import { Node, Flow } from '../../../src/pocketflow';
+import { Node, Flow } from '../../../../src/pocketflow';
 import OpenAI from 'openai';
 
 // Types (same as chat-completion.ts)
@@ -29,17 +38,46 @@ type SharedStorage = {
     messages: Message[];
 }
 
-// Helper function to call OpenAI API (same as chat-completion.ts)
+// Helper function to call OpenAI API (enhanced version with error handling)
 async function callLLM(messages: Message[]): Promise<string> {
+    // 🔐 Check for API key first - prevent confusing errors later
+    if (!process.env.OPENAI_API_KEY) {
+        throw new Error(`
+🚨 OpenAI API key not found! 
+📝 Create a .env file with: OPENAI_API_KEY=your-key-here
+🔗 Get your key at: https://platform.openai.com/api-keys
+        `);
+    }
+
     const client = new OpenAI({
-        apiKey: process.env['OPENAI_API_KEY'],
+        apiKey: process.env.OPENAI_API_KEY,
     });
 
-    const completion = await client.chat.completions.create({
-        model: 'gpt-4o',
-        messages: messages,
-    });
-    return completion.choices[0].message.content ?? '';
+    try {
+        const completion = await client.chat.completions.create({
+            model: 'gpt-4o',
+            messages: messages,
+        });
+        
+        // 🛡️ Always check if we got a response
+        const content = completion.choices[0]?.message?.content;
+        if (!content) {
+            throw new Error('OpenAI returned empty response');
+        }
+        
+        return content;
+    } catch (error) {
+        // 🔄 Provide helpful error messages for common issues
+        if (error instanceof Error) {
+            if (error.message.includes('401')) {
+                throw new Error('Invalid API key - please check your .env file');
+            }
+            if (error.message.includes('quota')) {
+                throw new Error('OpenAI quota exceeded - check your billing');
+            }
+        }
+        throw error; // Re-throw other errors
+    }
 }
 
 // PocketFlow Node (same as chat-completion.ts)
@@ -109,6 +147,9 @@ class TerminalChat {
         console.log('🔚 Type "exit", "quit", or "bye" to end the conversation');
         console.log('📜 Type "history" to see the full conversation');
         console.log('🧹 Type "clear" to clear the conversation history');
+        console.log('🎓 Community & help: see ../JOIN_COMMUNITY.md');
+        console.log('-'.repeat(50));
+        console.log('🧠 Same ChatNode, persistent conversations - simple ideas stacked together!');
         console.log('-'.repeat(50));
     }
 
