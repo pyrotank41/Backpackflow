@@ -1,6 +1,118 @@
-# LinkedIn Post Templates - Building AI from First Principles Series 📱
+# LinkedIn Post Templates - Building AI from First Principles Series
 
-*A collection of LinkedIn post templates for promoting and sharing the "Building AI from First Principles" educational series*
+*Plain-language templates for sharing the "Building AI from First Principles" series*
+
+## Minimal Plain‑Language Templates (Recommended)
+
+Guidelines:
+- Keep language simple and direct
+- Avoid emoji unless it adds clear value
+- Set realistic expectations; invite conversation
+- Use repo README for code; use JOIN_COMMUNITY.md for the latest community link
+
+### Series Launch (Building AI from First Principles)
+
+Title: Building AI from First Principles — Series Launch
+
+"Building AI from First Principles" is an open series that builds production‑minded AI components from first principles.
+
+Manifesto:
+"Complex AI systems are just simple ideas stacked together."
+
+What’s available now:
+- Part 1: From API calls to interactive conversations (PocketFlow pattern)
+- Part 2: Research agent (in progress)
+- Part 3+: Community‑driven topics
+
+What’s different:
+- Code‑first examples before theory
+- Reusable components, not one‑offs
+- Open source, designed for learning and reuse
+
+Links:
+- Code: GitHub repo (root README)
+- Community: see JOIN_COMMUNITY.md in the repo (latest link and instructions)
+
+Question: What would you like to learn next about AI agents?
+
+Hashtags:
+#PragmaticAI #BuildingAIFromFirstPrinciples #FirstPrinciples #AI #OpenSource #TypeScript #LLM
+
+### Part 1 - Foundations (Building AI from First Principles)
+
+Title: Building AI from First Principles — Part 1 (Foundations)
+
+In "Building AI from First Principles", Part 1 is live: from API calls to interactive conversations.
+
+What you’ll learn:
+- The PocketFlow pattern: prep → exec → post
+- How a single API call becomes a conversation
+- How to keep state across messages
+- Building blocks you can reuse
+
+Examples:
+1) Basic chat completion (learn the pattern)
+2) Interactive terminal chat (persistent history, simple commands)
+
+Links:
+- Code: Part 1 folder in the repo
+- Community help: JOIN_COMMUNITY.md (latest link)
+
+Question: What part of AI agents is most confusing for you right now?
+
+Hashtags:
+#PragmaticAI #BuildingAIFromFirstPrinciples #FirstPrinciples #AI #OpenSource #TypeScript #LLM
+
+### Part 2 - Research Agent (Teaser) — Building AI from First Principles
+
+Title: Building AI from First Principles — Part 2 (Research Agent Teaser)
+
+In "Building AI from First Principles", next up: a research agent using the same pattern.
+
+Challenge: Move from “chat” to “research, analyze, synthesize”.
+Approach: Multi‑step workflows using the same PocketFlow pattern from Part 1.
+
+We’ll cover:
+- Node chaining
+- External API integration
+- Data transformation between steps
+- Parallelism and error handling basics
+
+Links:
+- Code: Repo (Part 2 directory as it lands)
+- Community: JOIN_COMMUNITY.md (ideas and feedback)
+
+Question: What would you use a research agent for?
+
+Hashtags:
+#PragmaticAI #BuildingAIFromFirstPrinciples #FirstPrinciples #AI #OpenSource #TypeScript #LLM
+
+### Technical Deep Dive — Building AI from First Principles
+
+Title: Building AI from First Principles — Technical Deep Dive
+
+In "Building AI from First Principles", we use the PocketFlow pattern to separate prep, exec, and post.
+
+Problem: Mixed AI code is hard to test, debug, and extend.
+Pattern: Separate prep (prepare data), exec (do the work), post (store results).
+
+Why it works:
+- Testable: each phase is isolated
+- Debuggable: clear failure points
+- Extensible: add features without breaking everything
+- Reusable: same node works across projects
+
+Links:
+- See it in code: Part 1 examples in the repo
+- Community discussion: JOIN_COMMUNITY.md
+
+Manifesto reminder:
+"Complex AI systems are just simple ideas stacked together." The pattern makes that practical.
+
+Hashtags:
+#PragmaticAI #BuildingAIFromFirstPrinciples #FirstPrinciples #AI #OpenSource #TypeScript #LLM
+
+—
 
 ---
 

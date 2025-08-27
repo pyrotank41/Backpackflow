@@ -1,0 +1,44 @@
+# Source files
+src/
+tests/
+tutorials/
+
+# Development files
+*.test.ts
+*.spec.ts
+jest.config.js
+tsconfig.json
+
+# Documentation
+*.md
+!README.md
+
+# Development dependencies
+.git/
+.gitignore
+.env*
+.DS_Store
+
+# Node modules (should be ignored by default but being explicit)
+node_modules/
+
+# Build artifacts
+*.tsbuildinfo
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+.cursor/
+
+# Writing templates and tasks
+writing_templates/
+tasks/
+
+# Git files
+.gitattributes
+.gitignore
+
+# Logs
+*.log

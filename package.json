@@ -32,7 +32,7 @@
     "start": "ts-node",
     "test": "jest",
     "test:watch": "jest --watch",
-    "example": "ts-node examples/explore-pocketflow.ts"
+    "example": "ts-node tutorials/storage-demo.ts"
   },
   "keywords": [
     "llm",
@@ -41,8 +41,16 @@
     "pocketflow",
     "config-driven"
   ],
-  "author": "",
+  "author": "Karan Singh Kochar",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pyrotank41/Backpackflow.git"
+  },
+  "homepage": "https://github.com/pyrotank41/Backpackflow#readme",
+  "bugs": {
+    "url": "https://github.com/pyrotank41/Backpackflow/issues"
+  },
   "directories": {
     "test": "tests"
   },

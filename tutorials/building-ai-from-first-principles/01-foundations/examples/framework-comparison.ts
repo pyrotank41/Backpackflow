@@ -2,8 +2,8 @@ import { config } from 'dotenv';
 import path from 'path';
 config({ path: path.join(__dirname, '.env') });
 
-import { OpenAIProvider } from 'backpackflow/providers/openai-provider';
-import { ChatNode, ChatNodeStorage } from 'backpackflow/nodes/llm/chat-node';
+import { OpenAIProvider } from 'backpackflow/providers';
+import { ChatNode, ChatNodeStorage } from 'backpackflow/nodes';
 import { Flow } from 'backpackflow/pocketflow';
 
 
