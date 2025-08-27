@@ -27,6 +27,7 @@ Community & help: see [JOIN_COMMUNITY.md](../JOIN_COMMUNITY.md)
 
 **Status: Complete ✅**
 
+<a id="what-youll-learn"></a>
 ## 🎯 What You'll Learn
 
 By the end of this part, you'll understand:
@@ -36,6 +37,7 @@ By the end of this part, you'll understand:
 - **Reusable Node Components** - Building blocks you can use in any AI project
 - **From API to Conversation** - The difference between single completions and real chatbots
 
+<a id="prerequisites"></a>
 ## 🎓 Prerequisites
 
 **Essential:**
@@ -49,6 +51,7 @@ By the end of this part, you'll understand:
 
 **New to TypeScript?** No problem! We'll explain types as we go.
 
+<a id="the-problem-were-solving"></a>
 ## 🚧 The Problem We're Solving
 
 Most AI tutorials teach you to copy-paste API calls that quickly become unmaintainable:
@@ -75,6 +78,7 @@ async function chatbot(message: string) {
 
 > 🧠 **Manifesto Moment**: *"Complex AI systems are just simple ideas stacked together."* Today, we'll take that chaotic API call and break it into three simple, reusable pieces.
 
+<a id="quick-start"></a>
 ## 🚀 Quick Start
 
 **Want to see the magic first?** Get up and running in 2 minutes:
@@ -107,6 +111,7 @@ npx tsx examples/interactive-chat.ts
     └── framework-comparison.ts       # BackpackFlow framework example
 ```
 
+<a id="15-minute-guided-walkthrough"></a>
 ## ⏱️ 15‑Minute Guided Walkthrough
 
 Follow these steps for a smooth first run:
@@ -145,6 +150,16 @@ If something breaks: open [TROUBLESHOOTING.md](./TROUBLESHOOTING.md). Want a dee
 
 Need a hand or want to share progress? See [JOIN_COMMUNITY.md](../JOIN_COMMUNITY.md).
 
+### Quick Checklist
+
+- [ ] Ran `examples/basic-chat.ts`
+- [ ] Tried `examples/interactive-chat.ts`
+- [ ] Understand prep → exec → post at a high level
+- [ ] Skimmed STEP_BY_STEP.md sections 1–2
+
+If you checked these, you’re ready to continue.
+
+<a id="basic-chat-explained"></a>
 ## 🧩 Basic Chat Explained
 
 A quick look at how the pattern comes together in `examples/basic-chat.ts`.
@@ -191,6 +206,7 @@ await chatFlow.run(shared);
 
 > 🧠 Manifesto in Action: One complex function → three simple, reusable ideas.
 
+<a id="learning-outcomes"></a>
 ## 🎯 Learning Outcomes
 
 By completing this part, you'll be able to:
@@ -201,6 +217,7 @@ By completing this part, you'll be able to:
 ✅ **Extend** the pattern to add features like conversation limits  
 ✅ **Apply** the same pattern to different types of AI tasks
 
+<a id="learning-paths"></a>
 ## 🗺️ Learning Paths
 
 Choose your adventure based on your learning style:
@@ -222,6 +239,7 @@ Choose your adventure based on your learning style:
 3. Reference [STEP_BY_STEP.md](./STEP_BY_STEP.md) when you get stuck
 4. Check [CONCEPTS_DEEP_DIVE.md](./CONCEPTS_DEEP_DIVE.md) for "why" questions
 
+<a id="try-it-now"></a>
 ## 🎪 Try It Now
 
 **Ready to experiment?** Here are quick modifications to try:
@@ -234,6 +252,7 @@ Choose your adventure based on your learning style:
 
 > 🏗️ **Building Block Mindset**: Each modification you make is a *simple idea* that could become part of a more complex system. Save your experiments - they might inspire your next big project!
 
+<a id="what-were-building"></a>
 ## 🏗️ What We're Building
 
 You'll see the evolution from simple API calls to framework components:
@@ -253,6 +272,7 @@ graph LR
     class E,F solution
 ```
 
+<a id="whats-next"></a>
 ## 🚀 What's Next
 
 **Congratulations!** You've mastered the foundation of AI development. Here's what you can do now:
@@ -269,6 +289,7 @@ In **Part 2: Research Agent**, you'll use these components to create multi-step 
 - 🤖 Make intelligent decisions
 - 🔗 Chain multiple AI operations together
 
+<a id="join-the-community"></a>
 ### Join the Community
 
 🎓 **Connect with Fellow Builders**: See [JOIN_COMMUNITY.md](../JOIN_COMMUNITY.md) to:
@@ -280,6 +301,7 @@ In **Part 2: Research Agent**, you'll use these components to create multi-step 
 
 > 🤝 **Manifesto in Action**: *"Share the journey"* - Your questions, insights, and contributions make this series better for everyone!
 
+<a id="need-more-help"></a>
 ## 📚 Need More Help?
 
 - **Stuck on concepts?** → [STEP_BY_STEP.md](./STEP_BY_STEP.md)
@@ -293,18 +315,4 @@ In **Part 2: Research Agent**, you'll use these components to create multi-step 
 
 *Built with ❤️ using PocketFlow and BackpackFlow*
 
-## 📊 Learning Progress
-
-**Core Concepts**: 4 total
-- [ ] prep→exec→post Pattern
-- [ ] Shared Storage Architecture  
-- [ ] Node Lifecycle Management
-- [ ] From API to Conversation
-
-**Files to Complete**: 
-- [ ] Run examples/basic-chat.ts
-- [ ] Run examples/interactive-chat.ts  
-- [ ] Read STEP_BY_STEP.md
-- [ ] Try one exercise
-
-**Ready for Part 2?** Complete the checklist above first!
+<!-- Learning Progress removed in favor of the Quick Checklist after the walkthrough to maintain flow -->
