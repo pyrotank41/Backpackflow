@@ -25,6 +25,7 @@ type Message = {
 
 type SharedStorage = {
     messages: Message[];
+    userMessage: string;
 }
 
 // Helper function to call OpenAI API
@@ -42,13 +43,13 @@ async function callLLM(messages: Message[]): Promise<string> {
 
 // PocketFlow Node that handles the chat completion
 class ChatNode extends Node<SharedStorage> {
-    constructor(private userMessage: string) {
+    constructor() {
         super();
     }
 
     async prep(shared: SharedStorage): Promise<Message[]> {
         // Add user message to conversation
-        shared.messages.push({ role: 'user', content: this.userMessage });
+        shared.messages.push({ role: 'user', content: shared.userMessage });
         return shared.messages;
     }
     
@@ -67,32 +68,23 @@ class ChatNode extends Node<SharedStorage> {
     }
 }
 
-// PocketFlow Flow that orchestrates the ChatNode
-class ChatFlow extends Flow<SharedStorage> {
-    constructor(userMessage: string) {
-        const chatNode = new ChatNode(userMessage);
-        super(chatNode);
-    }
-}
 
-// Convenience function to send a message and get a response
-async function sendMessage(shared: SharedStorage, message: string): Promise<string> {
-    const flow = new ChatFlow(message);
-    await flow.run(shared);
-    
-    // Return the last assistant message
-    const lastMessage = shared.messages[shared.messages.length - 1];
-    return lastMessage.role === 'assistant' ? lastMessage.content : '';
-}
 
 // Example usage
 async function main() {
     console.log('🎓 Chat Completion - PocketFlow Basics\n');
+
+    // initialize the chat node
+    const chatNode = new ChatNode();
     
-    const shared: SharedStorage = { messages: [] };
+    // PocketFlow Flow that orchestrates the ChatNode
+    const chatFlow = new Flow(chatNode);
     
-    console.log('Sending message...');
-    const response = await sendMessage(shared, "Explain what PocketFlow's prep-exec-post pattern does in one sentence.");
+    const shared: SharedStorage = { messages: [] , userMessage: "explain ETL process in a few sentence. reply in markdown format."};
+    
+    console.log('Running the flow...');
+
+    await chatFlow.run(shared);
     
     console.log('\nConversation:');
     shared.messages.forEach((msg, index) => {

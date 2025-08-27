@@ -4,6 +4,28 @@
   "description": "A config-driven LLM framework built on top of PocketFlow",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.js"
+    },
+    "./pocketflow": {
+      "types": "./dist/pocketflow.d.ts",
+      "require": "./dist/pocketflow.js",
+      "import": "./dist/pocketflow.js"
+    },
+    "./providers": {
+      "types": "./dist/providers/index.d.ts",
+      "require": "./dist/providers/index.js",
+      "import": "./dist/providers/index.js"
+    },
+    "./nodes": {
+      "types": "./dist/nodes/index.d.ts",
+      "require": "./dist/nodes/index.js",
+      "import": "./dist/nodes/index.js"
+    }
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",

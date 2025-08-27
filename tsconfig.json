@@ -11,7 +11,15 @@
     "forceConsistentCasingInFileNames": true,
     "declaration": true,
     "declarationMap": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "backpackflow": ["./src/index"],
+      "backpackflow/*": ["./src/*"],
+      "backpackflow/pocketflow": ["./src/pocketflow"],
+      "backpackflow/providers": ["./src/providers/index"],
+      "backpackflow/nodes": ["./src/nodes/index"]
+    }
   },
   "include": ["src/**/*", "tests/**/*", "examples/**/*"],
   "exclude": ["node_modules", "dist"]
