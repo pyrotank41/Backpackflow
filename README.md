@@ -3,7 +3,7 @@
 A config-driven LLM framework built on top of [PocketFlow](https://github.com/The-Pocket/PocketFlow-Typescript). BackpackFlow extends PocketFlow with configuration-driven workflows, utility functions, and enhanced developer experience.
 
 [![npm version](https://badge.fury.io/js/backpackflow.svg)](https://badge.fury.io/js/backpackflow)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 > **⚠️ Work in Progress**: This is a side project that I work on as time permits. APIs are bound to change as the project evolves. Use at your own risk!
 
@@ -99,4 +99,6 @@ This is a personal side project that I work on as time permits. While contributi
 
 ## License
 
-MIT 
+Apache-2.0 - see the [LICENSE](LICENSE) file for details.
+
+Copyright 2024 BackpackFlow 
