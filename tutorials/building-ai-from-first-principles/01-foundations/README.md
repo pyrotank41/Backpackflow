@@ -27,6 +27,8 @@ Community & help: see [JOIN_COMMUNITY.md](../JOIN_COMMUNITY.md)
 
 **Status: Complete ✅**
 
+> 📦 **Using BackpackFlow in your own project?** Install it with `npm install backpackflow` and use the import syntax shown in the code comments. This tutorial uses local source files for learning purposes.
+
 <a id="what-youll-learn"></a>
 ## 🎯 What You'll Learn
 
