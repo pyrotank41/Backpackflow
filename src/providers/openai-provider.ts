@@ -43,18 +43,31 @@ export class OpenAIProvider implements LLMProvider {
         const mergedConfig = { ...this.defaultConfig, ...config } as OpenAIConfig;
 
         try {
-            const completion = await this.client.chat.completions.create({
+            const requestParams: any = {
                 model: mergedConfig.model!,
                 messages: messages.map(msg => ({
                     role: msg.role,
                     content: msg.content
                 })),
-                temperature: mergedConfig.temperature,
-                max_tokens: mergedConfig.maxTokens,
-                top_p: mergedConfig.topP,
-                frequency_penalty: mergedConfig.frequencyPenalty,
-                presence_penalty: mergedConfig.presencePenalty,
-            });
+            };
+
+            // Handle model-specific parameters
+            const isNewModel = mergedConfig.model?.includes('gpt-5') || mergedConfig.model?.includes('o1');
+            
+            if (isNewModel) {
+                // Newer models use max_completion_tokens and don't support custom temperature
+                requestParams.max_completion_tokens = mergedConfig.maxTokens;
+                // Don't set temperature for gpt-5/o1 models (they only support default value of 1)
+            } else {
+                // Older models support all parameters
+                requestParams.max_tokens = mergedConfig.maxTokens;
+                requestParams.temperature = mergedConfig.temperature;
+                requestParams.top_p = mergedConfig.topP;
+                requestParams.frequency_penalty = mergedConfig.frequencyPenalty;
+                requestParams.presence_penalty = mergedConfig.presencePenalty;
+            }
+
+            const completion = await this.client.chat.completions.create(requestParams);
 
             const response = completion.choices[0]?.message?.content;
             if (!response) {
@@ -71,10 +84,10 @@ export class OpenAIProvider implements LLMProvider {
                 model: completion.model,
             };
         } catch (error) {
-            if (error instanceof Error) {
-                throw new Error(`OpenAI API error: ${error.message}`);
-            }
-            throw new Error('Unknown OpenAI API error');
+            // if (error instanceof Error) {
+            //     throw new Error(`OpenAI API error: ${error.message}`);
+            // }
+            throw new Error(`Unknown OpenAI API error: ${error}`);
         }
     }
 
