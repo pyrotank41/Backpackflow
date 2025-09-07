@@ -1,0 +1,40 @@
+{
+  "name": "article-workflow-pocketflow",
+  "version": "1.0.0",
+  "description": "Article writing workflow using PocketFlow and Instructor.js - demonstrates sequential node chaining",
+  "main": "dist/main.js",
+  "types": "dist/main.d.ts",
+  "scripts": {
+    "start": "ts-node main.ts",
+    "build": "tsc",
+    "dev": "ts-node --watch main.ts",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "pocketflow",
+    "workflow",
+    "article-writing",
+    "content-generation",
+    "instructor",
+    "llm",
+    "openai",
+    "tutorial"
+  ],
+  "author": "karan singh kochar",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@instructor-ai/instructor": "^1.0.0",
+    "dotenv": "^16.4.5",
+    "openai": "^5.15.0",
+    "pocketflow": "^1.0.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

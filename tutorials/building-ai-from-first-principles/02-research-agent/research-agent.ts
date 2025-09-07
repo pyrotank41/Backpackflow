@@ -131,6 +131,7 @@ class searchNode extends Node<searchResult> {
     async exec(prepRes) {
         console.log("Search node exec")
         let { query, maxResults } = prepRes
+        if (maxResults == undefined || maxResults == null || maxResults == 0) { maxResults = 3 }
         const response = await exa.searchAndContents(query, { numResults: maxResults, highlights: true})
         console.log(response)
 
@@ -150,7 +151,7 @@ class searchNode extends Node<searchResult> {
         // shared.searchResults.push(execRes)
         // console.log("Search results: " + execRes)
         console.log(`following is the context after the search: ${shared.context}`)
-        return "decide"
+        return undefined  // This will use the "default" action set by .next()
     }
 }
 
@@ -193,13 +194,17 @@ const final_answer_node = new finalAnswerNode()
 
 decision_node.on("search", search_node)
 decision_node.on("answer", final_answer_node)
-search_node.on("decide", decision_node)
+search_node.next(decision_node)
 
 const flow = new Flow(decision_node)
 
-const resp = flow.run({
-    question: "Who is the ceo of OpenAI?",
-    context: ""
-})
-console.log("Response:")
-console.log(resp)
+async function main() {
+    const resp = await flow.run({
+        question: "Who is the ceo of OpenAI?",
+        context: ""
+    });
+    console.log("Response:");
+    console.log(resp);
+}
+
+main().catch(console.error);
