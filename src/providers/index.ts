@@ -6,7 +6,12 @@
  */
 
 export { LLMProvider, LLMMessage, LLMResponse, LLMConfig } from '../types/llm';
-export { OpenAIProvider, OpenAIConfig } from './openai-provider';
+export { 
+    OpenAIProvider, 
+    OpenAIConfig, 
+    StreamingOptions, 
+    StreamingLLMResponse 
+} from './openai-provider';
 
 // Future providers:
 // export { AnthropicProvider } from './anthropic-provider';

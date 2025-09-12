@@ -1,5 +1,7 @@
 # PocketFlow LLM Streaming Tutorial
 
+!!! NOT COMPLETE
+
 Real-time streaming of Large Language Model responses with user interruption capabilities using PocketFlow and TypeScript. Perfect for building responsive chat applications and interactive AI systems.
 
 ## Features

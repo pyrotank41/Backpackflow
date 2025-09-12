@@ -24,11 +24,11 @@ export interface ChatNodeConfig {
  * requiring chat capabilities
  */
 export class ChatNode extends Node<ChatNodeStorage> {
-    private llmProvider: LLMProvider;
-    private systemMessage?: string;
-    private model: string;
-    private temperature: number;
-    private maxTokens?: number;
+    protected llmProvider: LLMProvider;
+    protected systemMessage?: string;
+    protected model: string;
+    protected temperature: number;
+    protected maxTokens?: number;
 
     constructor(config: ChatNodeConfig) {
         super(); // Node constructor has default parameters

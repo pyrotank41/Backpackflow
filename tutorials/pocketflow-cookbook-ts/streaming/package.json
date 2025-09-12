@@ -1,0 +1,42 @@
+{
+  "name": "streaming-pocketflow",
+  "version": "1.0.0",
+  "description": "Real-time LLM streaming with user interruption capabilities using PocketFlow",
+  "main": "dist/main.js",
+  "types": "dist/main.d.ts",
+  "scripts": {
+    "start": "ts-node main.ts",
+    "demo": "ts-node main.ts --demo",
+    "build": "tsc",
+    "dev": "ts-node --watch main.ts",
+    "test:utils": "ts-node utils.ts",
+    "test:utils:demo": "ts-node utils.ts --demo",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "pocketflow",
+    "streaming",
+    "llm",
+    "openai",
+    "real-time",
+    "chat",
+    "interruption",
+    "tutorial"
+  ],
+  "author": "karan singh kochar",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "openai": "^5.15.0",
+    "pocketflow": "^1.0.0",
+    "readline": "^1.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

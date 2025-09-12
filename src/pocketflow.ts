@@ -1,5 +1,5 @@
 // DANGER AREA:NEVER EDIT THIS FILE. The following code was written by PocketFlow developer, and we want to maintain it as is.
-type NonIterableObject = Partial<Record<string, unknown>> & { [Symbol.iterator]?: never }; type Action = string;
+export type NonIterableObject = Partial<Record<string, unknown>> & { [Symbol.iterator]?: never }; type Action = string;
 class BaseNode<S = unknown, P extends NonIterableObject = NonIterableObject> {
   protected _params: P = {} as P; protected _successors: Map<Action, BaseNode> = new Map();
   protected async _exec(prepRes: unknown): Promise<unknown> { return await this.exec(prepRes); }
