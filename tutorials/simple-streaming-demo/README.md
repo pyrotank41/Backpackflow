@@ -27,12 +27,17 @@ A focused demo showing how to use PocketFlow's event streaming system for real-t
    npm run demo-no-api
    ```
 
-4. **Run the interactive chat demo (requires API key):**
+4. **Run the modern chat demo using Backpackflow utilities (requires API key):**
    ```bash
    npm start
    ```
 
-5. **Try the custom node demo:**
+5. **Run the legacy demo (original implementation):**
+   ```bash
+   npm start --legacy
+   ```
+
+6. **Try the custom node demo:**
    ```bash
    npm run custom
    ```
@@ -74,14 +79,23 @@ Perfect for seeing the event streaming system in action without any setup:
 - Displays comprehensive statistics
 - No API key required!
 
-### 2. Interactive Chat (`npm start`)
-Full interactive chat with real OpenAI integration:
+### 2. Modern Chat Demo (`npm start`)
+Uses the new Backpackflow terminal utilities from `src/utils/`:
+- **Cleaner code**: Built with reusable components
+- **Easy configuration**: Simple setup with sensible defaults
+- **Custom commands**: Extensible command system
+- **All features**: Same streaming, stats, and help functionality
+- **`/demo`**: Show information about the new utilities
+- **`/legacy`**: Switch to the legacy implementation
+
+### 3. Legacy Chat Demo (`npm start --legacy`)
+Original implementation showing the full code:
 - **Regular chat**: Just type your message and press Enter
 - **`/stats`**: View event statistics and conversation metrics
 - **`/help`**: Show help information
 - **`/quit`**: Exit the demo
 
-### 3. Custom Node Demo (`npm run custom`)
+### 4. Custom Node Demo (`npm run custom`)
 Shows how to extend the streaming system with custom nodes.
 
 ## Code Structure
@@ -151,7 +165,31 @@ npm run custom
 
 ## Integration with Your Code
 
-To use streaming in your own PocketFlow applications:
+### Using the New Utilities (Recommended)
+
+The easiest way to add streaming chat to your applications:
+
+```typescript
+import { createStreamingChatBotFromEnv } from '../../src/utils';
+
+// Simple setup with environment variables
+const chatBot = createStreamingChatBotFromEnv({
+    systemMessage: 'You are my custom assistant',
+    model: 'gpt-4o-mini'
+});
+
+// Add custom commands
+chatBot.addCommand('/custom', 'My custom command', () => {
+    console.log('Custom functionality!');
+});
+
+// Start the chat interface
+await chatBot.start();
+```
+
+### Manual Setup (Legacy Approach)
+
+For full control over the streaming system:
 
 ```typescript
 import { 

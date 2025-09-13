@@ -13,7 +13,10 @@
 import { 
     createNamespacedStream, 
     createEventChatNodeWithOpenAI,
-    ChatNodeStorage 
+    ChatNodeStorage,
+    StreamingChatBot as ModernStreamingChatBot,
+    createStreamingChatBotFromEnv,
+    TerminalCommand
 } from '../../src/index';
 import * as readline from 'readline';
 import * as dotenv from 'dotenv';
@@ -26,7 +29,7 @@ interface SimpleStorage extends ChatNodeStorage {
     messageCount: number;
 }
 
-class StreamingChatBot {
+class LegacyStreamingChatBot {
     private rl: readline.Interface;
     private chatNode: any;
     private storage: SimpleStorage;
@@ -114,9 +117,10 @@ class StreamingChatBot {
         console.log('This demo shows real-time LLM response streaming with events.');
         console.log('Type your messages and watch the response stream in real-time!\n');
         console.log('Commands:');
-        console.log('  /stats  - Show event statistics');
-        console.log('  /help   - Show this help');
-        console.log('  /quit   - Exit the demo\n');
+        console.log('  /stats   - Show event statistics');
+        console.log('  /storage - Show storage contents');
+        console.log('  /help    - Show this help');
+        console.log('  /quit    - Exit the demo\n');
 
         await this.chatLoop();
     }
@@ -133,6 +137,11 @@ class StreamingChatBot {
 
             if (userInput.toLowerCase() === '/stats') {
                 this.showStats();
+                continue;
+            }
+
+            if (userInput.toLowerCase() === '/storage') {
+                this.showStorage();
                 continue;
             }
 
@@ -186,6 +195,37 @@ class StreamingChatBot {
         // Show conversation history length
         const conversation = this.chatNode.getConversation(this.storage);
         console.log(`\nConversation history: ${conversation.length} messages`);
+    }
+
+    private showStorage() {
+        console.log('\n💾 Storage Contents');
+        console.log('═'.repeat(40));
+        
+        // Show the full storage object
+        console.log('Storage structure:');
+        console.log(JSON.stringify(this.storage, null, 2));
+        
+        // Show conversation details if available
+        if (this.storage.chat && this.storage.chat.messages) {
+            console.log('\n📝 Conversation Messages:');
+            this.storage.chat.messages.forEach((msg, index) => {
+                const role = msg.role.toUpperCase().padEnd(9);
+                const preview = msg.content.length > 50 
+                    ? msg.content.substring(0, 50) + '...' 
+                    : msg.content;
+                console.log(`  ${index + 1}. [${role}] ${preview}`);
+            });
+        } else {
+            console.log('\n📝 No conversation history yet');
+        }
+        
+        console.log(`\n📊 Storage Summary:`);
+        console.log(`  Session ID: ${this.storage.sessionId}`);
+        console.log(`  User Messages Sent: ${this.storage.messageCount}`);
+        console.log(`  Chat Initialized: ${this.storage.chat ? 'Yes' : 'No'}`);
+        if (this.storage.chat) {
+            console.log(`  Total Conversation Messages: ${this.storage.chat.messages?.length || 0}`);
+        }
     }
 
     private showHelp() {
@@ -295,13 +335,63 @@ async function customNodeDemo() {
     console.log('\n✅ Custom node demo complete!');
 }
 
+// New simplified demo using Backpackflow utilities
+async function modernChatDemo() {
+    console.log('🚀 Modern Streaming Chat Demo (using Backpackflow utilities)');
+    console.log('============================================================\n');
+
+    try {
+        // Create chatbot using the new utilities
+        const chatBot = createStreamingChatBotFromEnv({
+            namespace: 'modern-streaming-demo',
+            systemMessage: 'You are a helpful assistant demonstrating Backpackflow utilities. Keep responses concise and friendly.',
+            model: 'gpt-4o-mini',
+            terminalOptions: {
+                title: '🚀 Modern Backpackflow Chat',
+                description: 'This demo uses the new terminal utilities from src/utils/',
+                commands: [
+                    {
+                        command: '/demo',
+                        description: 'Show demo information',
+                        handler: () => {
+                            console.log('\n🎯 Demo Features:');
+                            console.log('• Uses Backpackflow terminal utilities from src/utils/');
+                            console.log('• Cleaner, more maintainable code');
+                            console.log('• Reusable components for other projects');
+                            console.log('• Simplified configuration and setup');
+                        }
+                    }
+                ]
+            }
+        });
+
+        // Add custom commands dynamically
+        chatBot.addCommand('/legacy', 'Run the legacy demo', async () => {
+            console.log('\n🔄 Switching to legacy demo...');
+            chatBot.cleanup();
+            const legacyBot = new LegacyStreamingChatBot();
+            await legacyBot.start();
+        });
+
+        // Start the modern chat interface
+        await chatBot.start();
+
+    } catch (error) {
+        console.error('❌ Error starting modern demo:', (error as Error).message);
+        console.log('\n💡 Falling back to legacy demo...');
+        const legacyBot = new LegacyStreamingChatBot();
+        await legacyBot.start();
+    }
+}
+
 // Main execution
 async function main() {
     const args = process.argv.slice(2);
 
     if (args.includes('--help')) {
         console.log('Simple Streaming Demo Usage:');
-        console.log('  npm start                - Interactive chat demo');
+        console.log('  npm start                - Modern chat demo (using utils)');
+        console.log('  npm start --legacy       - Legacy chat demo');
         console.log('  npm start --custom       - Custom node demo');
         console.log('  npm start --help         - Show this help');
         return;
@@ -312,9 +402,15 @@ async function main() {
         return;
     }
 
-    // Default: interactive chat
-    const chatBot = new StreamingChatBot();
-    await chatBot.start();
+    if (args.includes('--legacy')) {
+        console.log('🕰️  Running legacy demo...\n');
+        const chatBot = new LegacyStreamingChatBot();
+        await chatBot.start();
+        return;
+    }
+
+    // Default: modern chat demo using utilities
+    await modernChatDemo();
 }
 
 // Run if executed directly
@@ -322,4 +418,4 @@ if (require.main === module) {
     main().catch(console.error);
 }
 
-export { StreamingChatBot, CustomStreamingNode };
+export { LegacyStreamingChatBot, CustomStreamingNode };
