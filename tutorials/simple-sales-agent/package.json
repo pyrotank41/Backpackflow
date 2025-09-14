@@ -1,0 +1,36 @@
+{
+  "name": "simple-sales-agent",
+  "version": "1.0.0",
+  "description": "Simple sales agent tutorial using BackpackFlow framework",
+  "main": "main.ts",
+  "scripts": {
+    "start": "ts-node main.ts",
+    "dev": "ts-node main.ts",
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "run:compiled": "node dist/main.js"
+  },
+  "keywords": [
+    "backpackflow",
+    "pocketflow",
+    "sales",
+    "agent",
+    "llm",
+    "typescript",
+    "tutorial"
+  ],
+  "author": "karan singh kochar",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@instructor-ai/instructor": "^1.7.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
