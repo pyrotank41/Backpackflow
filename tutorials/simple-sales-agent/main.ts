@@ -8,7 +8,7 @@ import { randomUUID } from 'crypto';
 
 // Real UUID generator for tool requests
 function generateToolRequestId(): string {
-    return `tool_req_${randomUUID()}`;
+    return `tc_${randomUUID()}`;
 }
 
 // Helper function to convert JSON Schema to Zod schema
@@ -122,6 +122,21 @@ function getToolContext(toolRequestId: string, shared: any) {
     const tool = shared.available_tools.find((t: any) => t.name === request?.toolName);
     
     return { request, params, result, tool };
+}
+
+// OpenAI conversation message types
+interface ChatMessage {
+    role: "system" | "user" | "assistant" | "tool";
+    content: string;
+    tool_calls?: Array<{
+        id: string;
+        type: "function";
+        function: {
+            name: string;
+            arguments: string;
+        };
+    }>;
+    tool_call_id?: string;
 }
 
 export function getOpenaiInstructorClient() {
@@ -395,56 +410,15 @@ class FinalAnswerNode extends Node {
     }
 
     async prep(shared: any): Promise<unknown> {
-        // Gather all context for final response generation
         const originalRequest = shared.messages[0].content;
         const toolResults = shared.toolExecutionResults || [];
-        
-        // Create context string with tool results
-        let toolResultsContext = '';
-        for (const result of toolResults) {
-            const context = getToolContext(result.toolRequestId, shared);
-            if (context.request && result.executionResult.success) {
-                toolResultsContext += `\n\nTool: ${context.request.toolName}
-Brief: ${context.request.brief}
-Result: ${JSON.stringify(result.executionResult.content, null, 2)}`;
-            }
-        }
+        const hasToolResults = toolResults.length > 0;
 
-        return {
-            originalRequest,
-            toolResultsContext,
-            hasToolResults: toolResults.length > 0
-        };
-    }
-
-    async exec(prepRes: any): Promise<unknown> {
-        const { originalRequest, toolResultsContext, hasToolResults } = prepRes;
-
-        if (!hasToolResults) {
-            // Direct response without tools
-            const response = await this.client.chat.completions.create({
-                messages: [
-                    {
-                        role: "system",
-                        content: "You are a helpful sales assistant. Provide a clear, professional response to the user's request."
-                    },
-                    {
-                        role: "user",
-                        content: originalRequest
-                    }
-                ],
-                model: "gpt-4o",
-                temperature: 0.1
-            });
-            return { finalAnswer: response.choices[0].message.content };
-        }
-
-        // Generate response using tool results
-        const response = await this.client.chat.completions.create({
-            messages: [
-                {
-                    role: "system",
-                    content: `You are a professional sales assistant. Based on the tool execution results, provide a comprehensive, helpful response to the user's request. 
+        // Construct full OpenAI conversation format
+        const conversationHistory: ChatMessage[] = [
+            {
+                role: "system",
+                content: `You are a professional sales assistant. Based on the tool execution results, provide a comprehensive, helpful response to the user's request. 
 
 Guidelines:
 - Be clear and concise
@@ -453,25 +427,105 @@ Guidelines:
 - If some information wasn't found, mention it politely
 - Use a professional but friendly tone
 - Format the response nicely for readability`
-                },
+            },
+            {
+                role: "user",
+                content: originalRequest
+            }
+        ];
+
+        // Add tool interaction to conversation if tools were used
+        if (hasToolResults && shared.toolRequests?.length > 0) {
+            // Add assistant message with tool calls
+            const toolCalls = shared.toolRequests.map((req: ToolRequestWithId) => {
+                const context = getToolContext(req.id, shared);
+                return {
+                    id: req.id, // Use real tc_ IDs (39 chars, under OpenAI 40 char limit)
+                    type: "function",
+                    function: {
+                        name: req.toolName,
+                        arguments: JSON.stringify(context.params?.parameters || {})
+                    }
+                };
+            });
+
+            conversationHistory.push({
+                role: "assistant",
+                content: "I'll help you find that information using our product database and customer records.",
+                tool_calls: toolCalls
+            });
+
+            // Add tool responses
+            shared.toolExecutionResults.forEach((result: ToolExecutionResultWithId) => {
+                conversationHistory.push({
+                    role: "tool",
+                    tool_call_id: result.toolRequestId, // Use real tc_ IDs
+                    content: JSON.stringify(result.executionResult.content)
+                });
+            });
+        }
+
+        return {
+            conversationHistory,
+            originalRequest,
+            hasToolResults
+        };
+    }
+
+    async exec(prepRes: any): Promise<unknown> {
+        const { conversationHistory, hasToolResults } = prepRes;
+
+        if (!hasToolResults) {
+            // For direct responses, use a simpler system message
+            const directConversation = [
                 {
-                    role: "user", 
-                    content: `Original request: ${originalRequest}
+                    role: "system",
+                    content: "You are a helpful sales assistant. Provide a clear, professional response to the user's request."
+                },
+                ...conversationHistory.slice(1) // Skip the tool-focused system message, keep user message
+            ];
 
-Tool execution results:${toolResultsContext}
+            const response = await this.client.chat.completions.create({
+                messages: directConversation,
+                model: "gpt-4o",
+                temperature: 0.1
+            });
+            return { 
+                finalAnswer: response.choices[0].message.content,
+                conversationHistory: directConversation
+            };
+        }
 
-Please provide a comprehensive response based on these results.`
-                }
-            ],
+        // Use the full conversation history with tool interactions
+        const response = await this.client.chat.completions.create({
+            messages: conversationHistory,
             model: "gpt-4o",
             temperature: 0.1
         });
 
-        return { finalAnswer: response.choices[0].message.content };
+        return { 
+            finalAnswer: response.choices[0].message.content,
+            conversationHistory: conversationHistory
+        };
     }
 
     async post(shared: any, prepRes: any, execRes: any): Promise<string | undefined> {
         shared.finalAnswer = execRes.finalAnswer;
+        
+        // Update shared.messages with the complete conversation history
+        // This makes the system ready for multi-turn conversations
+        if (execRes.conversationHistory) {
+            // Add the final assistant response to complete the conversation
+            const completeConversation = [
+                ...execRes.conversationHistory,
+                {
+                    role: "assistant",
+                    content: execRes.finalAnswer
+                }
+            ];
+            shared.messages = completeConversation;
+        }
+        
         console.log('\n=== FINAL ANSWER ===');
         console.log(execRes.finalAnswer);
         console.log('===================\n');
