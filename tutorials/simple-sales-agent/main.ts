@@ -1,9 +1,15 @@
 import { Flow, Node, ParallelBatchNode } from "../../src/pocketflow";
-import { MCPServerManager, MCPServerConfig } from "../../src/nodes/mcp-core";
+import { MCPServerManager, MCPServerConfig, ToolRequest } from "../../src/nodes/mcp-core";
 import * as readline from 'readline';
 import OpenAI from "openai";
 import { z } from 'zod';
 import Instructor from '@instructor-ai/instructor';
+import { randomUUID } from 'crypto';
+
+// Real UUID generator for tool requests
+function generateToolRequestId(): string {
+    return `tool_req_${randomUUID()}`;
+}
 
 // Helper function to convert JSON Schema to Zod schema
 function jsonSchemaToZod(schema: any, definitions: any = {}): any {
@@ -70,7 +76,7 @@ const mcp_server_configs: MCPServerConfig[] = [
         command: "sh",
         args: ["-c", "cd /Users/karansinghkochar/Documents/GitHub/product-quote-mcp && uv run python -m src.standalone_erp_server"],
         transport: "stdio"
-    }
+}
     // {
     //     name: "erp_sales_url",
     //     url: "http://localhost:8000/llm/mcp/",
@@ -88,6 +94,35 @@ const DecisionSchema = z.object({
         brief: z.string().describe("single sentence on what we want from the tool")
     })).optional().describe("tool requests to call - only required when action is tool_call_request")
 });
+
+// Improved interfaces for tracking
+interface ToolRequestWithId {
+    id: string;
+    toolName: string;
+    brief: string;
+    status: 'pending' | 'param_generated' | 'executing' | 'completed' | 'failed';
+}
+
+interface ToolParamWithId {
+    toolRequestId: string;
+    parameters: any;
+    serverId: string;
+}
+
+interface ToolExecutionResultWithId {
+    toolRequestId: string;
+    executionResult: any;
+}
+
+// Helper function to access related tool data via toolRequestId
+function getToolContext(toolRequestId: string, shared: any) {
+    const request = shared.toolRequests.find((r: ToolRequestWithId) => r.id === toolRequestId);
+    const params = shared.toolParameters.find((p: ToolParamWithId) => p.toolRequestId === toolRequestId);
+    const result = shared.toolExecutionResults.find((r: ToolExecutionResultWithId) => r.toolRequestId === toolRequestId);
+    const tool = shared.available_tools.find((t: any) => t.name === request?.toolName);
+    
+    return { request, params, result, tool };
+}
 
 export function getOpenaiInstructorClient() {
   
@@ -109,6 +144,9 @@ class DecisionNode extends Node {
         this.client = getOpenaiInstructorClient();
     }
     async prep(shared: any): Promise<unknown> {
+        if (shared.currentDecision !== undefined) {
+            shared.currentDecision = undefined;
+        }
         return {messages: shared.messages, available_tools: shared.available_tools};
     }
     
@@ -156,12 +194,31 @@ Should I call tools or provide the final response?`}
         const decision = execRes.decision;
 
         console.log('Decision:', decision);
-        shared.currentDecision = decision;
+        
+        // Convert tool requests to include IDs and initialize tracking arrays
+        if (decision.action === "tool_call_request" && decision.tool_requests) {
+            const toolRequestsWithIds: ToolRequestWithId[] = decision.tool_requests.map((req: any) => ({
+                id: generateToolRequestId(),
+                toolName: req.toolName,
+                brief: req.brief,
+                status: 'pending' as const
+            }));
+            
+            shared.currentDecision = {
+                ...decision,
+                tool_requests: toolRequestsWithIds
+            };
+            
+            // Initialize tracking arrays
+            shared.toolRequests = toolRequestsWithIds;
+            shared.toolParameters = [];
+            shared.toolExecutionResults = [];
+        } else {
+            shared.currentDecision = decision;
+        }
 
         return decision.action;
-        
     }
-
 }
 
 
@@ -178,10 +235,10 @@ class ToolParamGenerationNode extends ParallelBatchNode {
     async prep(shared: any): Promise<unknown[]> {
         
         if (shared.currentDecision.action === "tool_call_request") {
-            const toolRequests = shared.currentDecision.tool_requests;
+            const toolRequests: ToolRequestWithId[] = shared.toolRequests;
             
             // Create an array of prep objects for each tool request
-            return toolRequests.map((toolRequest: any) => {
+            return toolRequests.map((toolRequest: ToolRequestWithId) => {
                 const Tool = shared.available_tools.find((t: any) => t.name === toolRequest.toolName);
                 
                 if (!Tool) {
@@ -236,19 +293,191 @@ class ToolParamGenerationNode extends ParallelBatchNode {
             temperature: 0.0
         });
 
-        console.log(`Tool param generation response for ${toolRequest.toolName}:`, param_generation_response);
+        console.log(`Tool param generation response for ${toolRequest.toolName} (ID: ${toolRequest.id}):`, param_generation_response);
+        
+        // Remove _meta field and only store essential data
+        const { _meta, ...cleanParameters } = param_generation_response;
         return {
-            tool_param_generation_response: param_generation_response,
-            toolName: toolRequest.toolName,
-            tool_in_use: prepRes.tool_in_use
+            toolRequestId: toolRequest.id,
+            parameters: cleanParameters,
+            serverId: prepRes.tool_in_use.serverId
         };
     }
     
     async post(shared: any, prepRes: any[], execRes: any[]): Promise<string> {
-        // Store all the generated parameters for tool execution
-        shared.generatedToolParams = execRes;
-        console.log('Generated parameters for all tools:', execRes);
+        // Store parameters in the new tracking structure
+        shared.toolParameters = execRes.map((result: any) => ({
+            toolRequestId: result.toolRequestId,
+            parameters: result.parameters,
+            serverId: result.serverId
+        } as ToolParamWithId));
+        
+        // Update tool request statuses
+        shared.toolRequests.forEach((req: ToolRequestWithId) => {
+            const hasParams = shared.toolParameters.find((p: ToolParamWithId) => p.toolRequestId === req.id);
+            if (hasParams) {
+                req.status = 'param_generated';
+            }
+        });
+        
+        console.log('Generated parameters for all tools:', shared.toolParameters);
         return "tool_execution";
+    }
+}
+
+class ToolExecutionNode extends ParallelBatchNode {
+    async prep(shared: any): Promise<unknown[]> {
+        
+        const res = []
+
+        for (const toolParam of shared.toolParameters) {
+            // Get tool context using helper function
+            const context = getToolContext(toolParam.toolRequestId, shared);
+            
+            if (!context.request || !context.tool) {
+                throw new Error(`Missing context for tool request ${toolParam.toolRequestId}`);
+            }
+            
+            const toolRequest: ToolRequest = {
+                toolName: context.request.toolName,
+                arguments: toolParam.parameters, // Already cleaned in ToolParamGenerationNode
+                serverId: toolParam.serverId
+            }
+            res.push({
+                tool_manager: shared.tool_manager, 
+                tool_request: toolRequest,
+                toolRequestId: toolParam.toolRequestId
+            });
+        }
+        return res;
+    }
+    
+    async exec(prepRes: any): Promise<unknown> {
+        const tool_manager = prepRes.tool_manager;
+        const tool_request = prepRes.tool_request;
+        const toolRequestId = prepRes.toolRequestId;
+        
+        console.log(`Executing tool ${tool_request.toolName} (ID: ${toolRequestId}):`, tool_request);
+
+        const result = await tool_manager.executeTool(tool_request);
+        return {
+            toolRequestId: toolRequestId,
+            executionResult: result
+        };
+    }
+
+    async post(shared: any, prepRes: any[], execRes: any[]): Promise<string> {
+        // Store execution results in the tracking structure
+        shared.toolExecutionResults = execRes.map((result: any) => ({
+            toolRequestId: result.toolRequestId,
+            executionResult: result.executionResult
+        } as ToolExecutionResultWithId));
+        
+        // Update tool request statuses
+        shared.toolRequests.forEach((req: ToolRequestWithId) => {
+            const hasResult = shared.toolExecutionResults.find((r: ToolExecutionResultWithId) => r.toolRequestId === req.id);
+            if (hasResult) {
+                req.status = hasResult.executionResult.success ? 'completed' : 'failed';
+            }
+        });
+        
+        console.log('Tool execution results:', shared.toolExecutionResults);
+        return "response_generation";
+    }
+}
+
+class FinalAnswerNode extends Node {
+    private client: any;
+
+    constructor() {
+        super();
+        this.client = getOpenaiInstructorClient();
+    }
+
+    async prep(shared: any): Promise<unknown> {
+        // Gather all context for final response generation
+        const originalRequest = shared.messages[0].content;
+        const toolResults = shared.toolExecutionResults || [];
+        
+        // Create context string with tool results
+        let toolResultsContext = '';
+        for (const result of toolResults) {
+            const context = getToolContext(result.toolRequestId, shared);
+            if (context.request && result.executionResult.success) {
+                toolResultsContext += `\n\nTool: ${context.request.toolName}
+Brief: ${context.request.brief}
+Result: ${JSON.stringify(result.executionResult.content, null, 2)}`;
+            }
+        }
+
+        return {
+            originalRequest,
+            toolResultsContext,
+            hasToolResults: toolResults.length > 0
+        };
+    }
+
+    async exec(prepRes: any): Promise<unknown> {
+        const { originalRequest, toolResultsContext, hasToolResults } = prepRes;
+
+        if (!hasToolResults) {
+            // Direct response without tools
+            const response = await this.client.chat.completions.create({
+                messages: [
+                    {
+                        role: "system",
+                        content: "You are a helpful sales assistant. Provide a clear, professional response to the user's request."
+                    },
+                    {
+                        role: "user",
+                        content: originalRequest
+                    }
+                ],
+                model: "gpt-4o",
+                temperature: 0.1
+            });
+            return { finalAnswer: response.choices[0].message.content };
+        }
+
+        // Generate response using tool results
+        const response = await this.client.chat.completions.create({
+            messages: [
+                {
+                    role: "system",
+                    content: `You are a professional sales assistant. Based on the tool execution results, provide a comprehensive, helpful response to the user's request. 
+
+Guidelines:
+- Be clear and concise
+- Include specific product details when available (SKU, name, price, etc.)
+- Address all parts of the user's request
+- If some information wasn't found, mention it politely
+- Use a professional but friendly tone
+- Format the response nicely for readability`
+                },
+                {
+                    role: "user", 
+                    content: `Original request: ${originalRequest}
+
+Tool execution results:${toolResultsContext}
+
+Please provide a comprehensive response based on these results.`
+                }
+            ],
+            model: "gpt-4o",
+            temperature: 0.1
+        });
+
+        return { finalAnswer: response.choices[0].message.content };
+    }
+
+    async post(shared: any, prepRes: any, execRes: any): Promise<string | undefined> {
+        shared.finalAnswer = execRes.finalAnswer;
+        console.log('\n=== FINAL ANSWER ===');
+        console.log(execRes.finalAnswer);
+        console.log('===================\n');
+        
+        // Return undefined to signal end of flow
+        return undefined;
     }
 }
 
@@ -261,13 +490,20 @@ async function main() {
 
     const sharedStorage = {
         messages: [{
-            role: 'user', content: 'please generate a quote for a 10 amp mcb, c curve and 20 amp mcb, c curve. also find me the name full name of the customer prachi distributores' } ],
-        available_tools: available_tools
+            role: 'user', content: 'please generate a quote for a 10 amp mcb, c curve and 20 amp mcb, c curve. also, do we have a customer name starting with "prachi"' } ],
+        available_tools: available_tools,
+        tool_manager: mcp_server_manager
     }
     const decision_node = new DecisionNode();
     const tool_param_generation_node = new ToolParamGenerationNode();
+    const tool_execution_node = new ToolExecutionNode();
+    const final_answer_node = new FinalAnswerNode();
     
+    // Set up the flow connections
     decision_node.on("tool_call_request", tool_param_generation_node);
+    decision_node.on("generate_final_response", final_answer_node);
+    tool_param_generation_node.on("tool_execution", tool_execution_node);
+    tool_execution_node.on("response_generation", final_answer_node);
 
     const flow = new Flow(decision_node);
 
