@@ -20,7 +20,7 @@ export interface FinalAnswerNodeConfig extends LLMNodeConfig {
 export class FinalAnswerNode extends BaseLLMNode {
     private includeToolInteractionInHistory: boolean;
     
-    constructor(config: FinalAnswerNodeConfig = {}) {
+    constructor(config: FinalAnswerNodeConfig) {
         super(config);
         this.includeToolInteractionInHistory = config.includeToolInteractionInHistory ?? true;
     }

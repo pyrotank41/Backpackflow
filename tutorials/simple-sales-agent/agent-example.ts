@@ -2,11 +2,12 @@ import {
     MCPServerManager, 
     MCPServerConfig,
     AgentNode,
-    EventStreamer
+    EventStreamer,
+    createInstructorClient
 } from "../../src/nodes";
 import { StreamEventType } from "../../src/events/event-streamer";
 import { config } from 'dotenv';
-import path from 'path';
+import * as path from 'path';
 
 config({ path: path.join(__dirname, '.env') });
 
@@ -64,13 +65,18 @@ async function agentExample() {
         });
     }
 
+    // Create LLM client (auto-detects OpenAI vs Azure OpenAI)
+    console.log('🔍 Creating LLM client...');
+    const instructorClient = createInstructorClient({ provider: 'azure' });
+
     // Create a sales agent with custom prompts and optional event streaming
     const salesAgent = new AgentNode({
         agentName: "SalesAgent",
 
-        // LLM configuration
+        // LLM configuration with explicit client
         llmConfig: {
-            model: 'gpt-4o',
+            instructorClient: instructorClient,  // Explicitly pass the client
+            model: 'gpt4.1',
             temperature: 0.1,
             // Pass EventStreamer to enable event emission
             ...(eventStreamer && { 

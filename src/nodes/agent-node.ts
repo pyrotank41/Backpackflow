@@ -15,8 +15,8 @@ export interface AgentNodeConfig {
     paramGenerationPrompt?: string;
     finalAnswerPrompt?: string;
     
-    // LLM Configuration (applied to all internal nodes)
-    llmConfig?: LLMNodeConfig;
+    // LLM Configuration (applied to all internal nodes) - instructorClient is required
+    llmConfig: LLMNodeConfig;
     
     // Agent identification
     agentName?: string;
@@ -55,8 +55,13 @@ export class AgentNode extends Node {
     
     public agentName: string;
 
-    constructor(config: AgentNodeConfig = {}) {
+    constructor(config: AgentNodeConfig) {
         super();
+        
+        // Validate that llmConfig with instructorClient is provided
+        if (!config.llmConfig || !config.llmConfig.instructorClient) {
+            throw new Error('AgentNode requires llmConfig with instructorClient to be provided');
+        }
         
         this.agentName = config.agentName || 'Agent';
         

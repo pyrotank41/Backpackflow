@@ -1,4 +1,4 @@
-import { EventStreamer, DecisionNode, MCPServerManager, MCPServerConfig } from "../../src/nodes";
+import { EventStreamer, DecisionNode, MCPServerManager, MCPServerConfig, createInstructorClient } from "../../src/nodes";
 
 import { config } from 'dotenv';
 import path from 'path';
@@ -24,7 +24,10 @@ async function main() {
     const available_tools = await mcp_server_manager.discoverTools();
     
     // 3. Create DecisionNode with EventStreamer
+    const instructorClient = createInstructorClient({ provider: 'openai' });
+    
     const decisionNode = new DecisionNode({
+        instructorClient: instructorClient,
         eventStreamer: eventStreamer,
         namespace: 'sales_demo',
         systemPrompt: 'You are a sales decision agent. Decide whether to call tools or provide a final response.'

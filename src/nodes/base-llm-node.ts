@@ -6,8 +6,8 @@ import { EventStreamer, StreamEventType } from '../events/event-streamer';
 // ===== BASE LLM NODE CONFIGURATION =====
 
 export interface LLMNodeConfig {
-    // LLM Configuration
-    instructorClient?: any;  // Pre-configured Instructor client
+    // LLM Configuration (Required)
+    instructorClient: any;   // Instructor client (required - must be passed in)
     model?: string;          // Default: "gpt-4o"
     temperature?: number;    // Default: 0.1
     
@@ -22,17 +22,65 @@ export interface LLMNodeConfig {
     [key: string]: any;
 }
 
-// ===== DEFAULT INSTRUCTOR CLIENT FACTORY =====
+// ===== INSTRUCTOR CLIENT FACTORIES =====
 
-export function getDefaultInstructorClient() {
+/**
+ * Create an Instructor client with OpenAI
+ */
+export function createOpenAIInstructorClient(apiKey?: string) {
     const oai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY || 'your-api-key'
+        apiKey: apiKey || process.env.OPENAI_API_KEY || 'your-api-key'
     });
 
     return Instructor({
         client: oai,
-        mode: "FUNCTIONS"
+        mode: "TOOLS"
     });
+}
+
+/**
+ * Create an Instructor client with Azure OpenAI
+ */
+export function createAzureOpenAIInstructorClient(config: {
+    apiKey?: string;
+    endpoint?: string;
+    deploymentName?: string;
+    apiVersion?: string;
+}) {
+    const azureOpenAI = new OpenAI({
+        apiKey: config.apiKey || process.env.AZURE_OPENAI_API_KEY,
+        baseURL: `${config.endpoint || process.env.AZURE_OPENAI_ENDPOINT}/openai/deployments/${config.deploymentName || process.env.AZURE_OPENAI_DEPLOYMENT_NAME}`,
+        defaultQuery: { 'api-version': config.apiVersion || process.env.AZURE_OPENAI_API_VERSION || '2024-02-15-preview' },
+        defaultHeaders: {
+            'api-key': config.apiKey || process.env.AZURE_OPENAI_API_KEY,
+        },
+    });
+
+    return Instructor({
+        client: azureOpenAI,
+        mode: "TOOLS"
+    });
+}
+
+export function createInstructorClient(config: {
+    provider: 'openai' | 'azure',
+    apiKey?: string,
+    endpoint?: string,
+    deploymentName?: string,
+    apiVersion?: string
+}): any {
+    if (config.provider === 'openai') {
+        return createOpenAIInstructorClient(config.apiKey);
+    } else if (config.provider === 'azure') {
+        return createAzureOpenAIInstructorClient({
+            apiKey: config.apiKey,
+            endpoint: config.endpoint,
+            deploymentName: config.deploymentName,
+            apiVersion: config.apiVersion
+        });
+    } else {
+        throw new Error('Invalid provider');
+    }
 }
 
 // ===== BASE LLM NODE CLASS =====
@@ -47,9 +95,15 @@ export abstract class BaseLLMNode extends Node {
     protected eventStreamer?: EventStreamer;
     public namespace: string;
     
-    constructor(config: LLMNodeConfig = {}) {
+    constructor(config: LLMNodeConfig) {
         super();
-        this.client = config.instructorClient || getDefaultInstructorClient();
+        
+        // Require instructor client to be passed in
+        if (!config.instructorClient) {
+            throw new Error(`${this.constructor.name} requires an instructorClient to be provided in config`);
+        }
+        
+        this.client = config.instructorClient;
         this.systemPrompt = config.systemPrompt || this.getDefaultSystemPrompt();
         this.model = config.model || 'gpt-4o';
         this.temperature = config.temperature ?? 0.1;

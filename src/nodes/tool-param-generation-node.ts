@@ -1,5 +1,5 @@
 import { ParallelBatchNode } from '../pocketflow';
-import { LLMNodeConfig, getDefaultInstructorClient } from './base-llm-node';
+import { LLMNodeConfig } from './base-llm-node';
 import { EventStreamer, StreamEventType } from '../events/event-streamer';
 import { 
     ToolParamNodeStorage, 
@@ -26,9 +26,13 @@ export class ToolParamGenerationNode extends ParallelBatchNode {
     protected eventStreamer?: EventStreamer;
     protected namespace: string;
 
-    constructor(config: ToolParamNodeConfig = {}) {
+    constructor(config: ToolParamNodeConfig) {
         super();
-        this.client = config.instructorClient || getDefaultInstructorClient();
+        // Require instructor client to be passed in
+        if (!config.instructorClient) {
+            throw new Error('ToolParamGenerationNode requires an instructorClient to be provided in config');
+        }
+        this.client = config.instructorClient;
         this.systemPrompt = config.systemPrompt || this.getDefaultSystemPrompt();
         this.model = config.model || 'gpt-4o';
         this.temperature = config.temperature ?? 0.1;
