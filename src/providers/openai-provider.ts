@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import { LLMProvider, LLMMessage, LLMResponse, LLMConfig } from '../types/llm';
-import { EventStream } from '../events/event-stream';
+import { EventStreamer, StreamEventType } from '../events/event-streamer';
 
 /**
  * OpenAI Provider for BackpackFlow
@@ -38,7 +38,8 @@ export interface StreamingLLMResponse extends LLMResponse {
 export class OpenAIProvider implements LLMProvider {
     private client: OpenAI;
     private defaultConfig: OpenAIConfig;
-    private eventStream?: EventStream;
+    private eventStreamer?: EventStreamer;
+    private namespace: string;
 
     constructor(config: OpenAIConfig) {
         if (!config.apiKey) {
@@ -55,6 +56,8 @@ export class OpenAIProvider implements LLMProvider {
             maxTokens: 2048,
             ...config
         };
+        
+        this.namespace = 'openai_provider';
     }
 
     async complete(messages: LLMMessage[], config?: LLMConfig): Promise<LLMResponse> {
@@ -63,14 +66,17 @@ export class OpenAIProvider implements LLMProvider {
         const startTime = Date.now();
 
         // Emit LLM request event
-        this.eventStream?.emit('llm:request', {
-            provider: 'openai',
-            model: mergedConfig.model!,
-            messages,
-            config: mergedConfig,
-            nodeId,
-            timestamp: startTime
-        });
+        if (this.eventStreamer) {
+            this.eventStreamer.emitEvent(this.namespace, StreamEventType.METADATA, {
+                event: 'llm_request',
+                provider: 'openai',
+                model: mergedConfig.model!,
+                messages,
+                config: mergedConfig,
+                nodeId,
+                timestamp: startTime
+            }, nodeId);
+        }
 
         try {
             const requestParams: any = {
@@ -116,26 +122,32 @@ export class OpenAIProvider implements LLMProvider {
             };
 
             // Emit LLM response event
-            this.eventStream?.emit('llm:response', {
-                provider: 'openai',
-                model: mergedConfig.model!,
-                response: result,
-                usage: result.usage,
-                duration,
-                nodeId,
-                timestamp: Date.now()
-            });
+            if (this.eventStreamer) {
+                this.eventStreamer.emitEvent(this.namespace, StreamEventType.METADATA, {
+                    event: 'llm_response',
+                    provider: 'openai',
+                    model: mergedConfig.model!,
+                    response: result,
+                    usage: result.usage,
+                    duration,
+                    nodeId,
+                    timestamp: Date.now()
+                }, nodeId);
+            }
 
             return result;
         } catch (error) {
             // Emit LLM error event
-            this.eventStream?.emit('llm:error', {
-                provider: 'openai',
-                model: mergedConfig.model!,
-                error: (error as Error).message,
-                nodeId,
-                timestamp: Date.now()
-            });
+            if (this.eventStreamer) {
+                this.eventStreamer.emitEvent(this.namespace, StreamEventType.ERROR, {
+                    event: 'llm_error',
+                    provider: 'openai',
+                    model: mergedConfig.model!,
+                    error: (error as Error).message,
+                    nodeId,
+                    timestamp: Date.now()
+                }, nodeId);
+            }
 
             throw new Error(`OpenAI API error: ${(error as Error).message}`);
         }
@@ -198,21 +210,27 @@ export class OpenAIProvider implements LLMProvider {
         let totalLength = 0;
 
         // Emit content start event
-        this.eventStream?.emit('content:start', {
-            nodeId,
-            model: mergedConfig.model,
-            timestamp: startTime
-        });
+        if (this.eventStreamer) {
+            this.eventStreamer.emitEvent(this.namespace, StreamEventType.PROGRESS, {
+                event: 'content_start',
+                nodeId,
+                model: mergedConfig.model,
+                timestamp: startTime
+            }, nodeId);
+        }
 
         // Emit LLM request event
-        this.eventStream?.emit('llm:request', {
-            provider: 'openai',
-            model: mergedConfig.model!,
-            messages,
-            config: mergedConfig,
-            nodeId,
-            timestamp: startTime
-        });
+        if (this.eventStreamer) {
+            this.eventStreamer.emitEvent(this.namespace, StreamEventType.METADATA, {
+                event: 'llm_request',
+                provider: 'openai',
+                model: mergedConfig.model!,
+                messages,
+                config: mergedConfig,
+                nodeId,
+                timestamp: startTime
+            }, nodeId);
+        }
 
         try {
             const requestParams: any = {
@@ -252,12 +270,9 @@ export class OpenAIProvider implements LLMProvider {
                     chunkCount++;
                     
                     // Emit streaming event for each chunk
-                    this.eventStream?.emit('content:stream', {
-                        chunk: content,
-                        totalLength,
-                        nodeId,
-                        timestamp: Date.now()
-                    });
+                    if (this.eventStreamer) {
+                        this.eventStreamer.emitEvent(this.namespace, StreamEventType.CHUNK, content, nodeId);
+                    }
 
                     // Call user-provided chunk handler
                     if (options.onChunk) {
@@ -280,24 +295,30 @@ export class OpenAIProvider implements LLMProvider {
             };
 
             // Emit content complete event
-            this.eventStream?.emit('content:complete', {
-                content: fullResponse,
-                totalLength,
-                duration,
-                nodeId,
-                timestamp: Date.now()
-            });
+            if (this.eventStreamer) {
+                this.eventStreamer.emitEvent(this.namespace, StreamEventType.FINAL, {
+                    event: 'content_complete',
+                    content: fullResponse,
+                    totalLength,
+                    duration,
+                    nodeId,
+                    timestamp: Date.now()
+                }, nodeId);
+            }
 
             // Emit LLM response event
-            this.eventStream?.emit('llm:response', {
-                provider: 'openai',
-                model: mergedConfig.model!,
-                response: result,
-                usage: result.usage,
-                duration,
-                nodeId,
-                timestamp: Date.now()
-            });
+            if (this.eventStreamer) {
+                this.eventStreamer.emitEvent(this.namespace, StreamEventType.METADATA, {
+                    event: 'llm_response',
+                    provider: 'openai',
+                    model: mergedConfig.model!,
+                    response: result,
+                    usage: result.usage,
+                    duration,
+                    nodeId,
+                    timestamp: Date.now()
+                }, nodeId);
+            }
 
             // Call user-provided completion handler
             if (options.onComplete) {
@@ -310,13 +331,16 @@ export class OpenAIProvider implements LLMProvider {
             const err = error as Error;
             
             // Emit LLM error event
-            this.eventStream?.emit('llm:error', {
-                provider: 'openai',
-                model: mergedConfig.model!,
-                error: err.message,
-                nodeId,
-                timestamp: Date.now()
-            });
+            if (this.eventStreamer) {
+                this.eventStreamer.emitEvent(this.namespace, StreamEventType.ERROR, {
+                    event: 'llm_error',
+                    provider: 'openai',
+                    model: mergedConfig.model!,
+                    error: err.message,
+                    nodeId,
+                    timestamp: Date.now()
+                }, nodeId);
+            }
 
             // Call user-provided error handler
             if (options.onError) {
@@ -328,17 +352,18 @@ export class OpenAIProvider implements LLMProvider {
     }
 
     /**
-     * Set the event stream for this provider
+     * Set the event streamer for this provider
      */
-    setEventStream(eventStream: EventStream): void {
-        this.eventStream = eventStream;
+    setEventStreamer(eventStreamer: EventStreamer, namespace?: string): void {
+        this.eventStreamer = eventStreamer;
+        if (namespace) this.namespace = namespace;
     }
 
     /**
-     * Get the current event stream
+     * Get the current event streamer
      */
-    getEventStream(): EventStream | undefined {
-        return this.eventStream;
+    getEventStreamer(): EventStreamer | undefined {
+        return this.eventStreamer;
     }
 
     /**

@@ -5,7 +5,8 @@ import {
     DecisionNode,
     FinalAnswerNode,
     ToolParamGenerationNode,
-    ToolExecutionNode
+    ToolExecutionNode,
+    createInstructorClient
 } from "../../src/nodes";
 import * as readline from 'readline';
 
@@ -46,8 +47,13 @@ async function main() {
         tool_manager: mcp_server_manager
     }
     
+    // Create LLM client (explicitly specify provider)
+    console.log('🔍 Creating LLM client...');
+    const instructorClient = createInstructorClient({ provider: 'openai' });
+    
     // Create nodes with custom sales-focused prompts
     const decision_node = new DecisionNode({
+        instructorClient: instructorClient,
         systemPrompt: `You are a sales decision agent for PragmaticAI Solutions. Decide whether to call tools or provide a final response.
 
 Decision Guidelines:
@@ -58,12 +64,14 @@ Decision Guidelines:
     });
     
     const tool_param_generation_node = new ToolParamGenerationNode({
+        instructorClient: instructorClient,
         systemPrompt: `You are a sales tool parameter generation agent for PragmaticAI Solutions. Generate accurate parameters for sales tools like product searches, quote generation, and customer lookups.`
     });
     
     const tool_execution_node = new ToolExecutionNode();
     
     const final_answer_node = new FinalAnswerNode({
+        instructorClient: instructorClient,
         systemPrompt: `You are a professional sales assistant for PragmaticAI Solutions. Based on the tool execution results, provide a comprehensive, helpful response to the customer's request.
 
 Guidelines:

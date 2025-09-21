@@ -28,7 +28,7 @@ export const DefaultDecisionSchema = z.object({
 export class DecisionNode extends BaseLLMNode {
     private decisionSchema: any;
     
-    constructor(config: DecisionNodeConfig = {}) {
+    constructor(config: DecisionNodeConfig) {
         super(config);
         this.decisionSchema = config.decisionSchema || DefaultDecisionSchema;
     }

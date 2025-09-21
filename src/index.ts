@@ -16,8 +16,22 @@ export * from './events';
 export * from './types/llm';
 export * from './types/events';
 
-// Storage capabilities
-export * from './storage/capabilities';
+// Storage capabilities (explicit exports to avoid conflicts)
+export { 
+    BaseStorage, 
+    SearchCapable, 
+    ChatCapable, 
+    DocumentCapable, 
+    TaskCapable, 
+    MemoryCapable,
+    ResearchStorage,
+    DocumentProcessingStorage,
+    SimpleChatStorage,
+    AgentStorage,
+    createStorage,
+    updateStorage,
+    hasCapability
+} from './storage/capabilities';
 
 // Utilities (terminal interface, streaming chatbot, etc.)
 export * from './utils';
