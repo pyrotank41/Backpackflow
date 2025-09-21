@@ -14,12 +14,15 @@ export interface LLMNodeConfig {
     // Prompt Configuration
     systemPrompt?: string;   // Override default system prompt
     
-    // Event Streaming (Optional)
-    eventStreamer?: EventStreamer;  // If provided, node will emit events
-    namespace?: string;             // Namespace for events (default: node class name)
-    
     // Additional node-specific config can be added by extending classes
     [key: string]: any;
+}
+
+// ===== EVENT STREAMING CONFIGURATION =====
+// Separate interface for event streaming to keep concerns separated
+export interface EventStreamingConfig {
+    eventStreamer?: EventStreamer;  // If provided, node will emit events
+    namespace?: string;             // Namespace for events (default: node class name)
 }
 
 // ===== INSTRUCTOR CLIENT FACTORIES =====
@@ -95,7 +98,7 @@ export abstract class BaseLLMNode extends Node {
     protected eventStreamer?: EventStreamer;
     public namespace: string;
     
-    constructor(config: LLMNodeConfig) {
+    constructor(config: LLMNodeConfig & EventStreamingConfig) {
         super();
         
         // Require instructor client to be passed in
@@ -108,7 +111,7 @@ export abstract class BaseLLMNode extends Node {
         this.model = config.model || 'gpt-4o';
         this.temperature = config.temperature ?? 0.1;
         
-        // Initialize event streaming
+        // Initialize event streaming (separate concern)
         this.eventStreamer = config.eventStreamer;
         this.namespace = config.namespace || this.constructor.name.toLowerCase();
     }

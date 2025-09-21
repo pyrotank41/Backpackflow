@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { BaseLLMNode, LLMNodeConfig } from './base-llm-node';
+import { BaseLLMNode, LLMNodeConfig, EventStreamingConfig } from './base-llm-node';
 import { StreamEventType } from '../events/event-streamer';
 import { 
     DecisionNodeStorage, 
@@ -9,7 +9,7 @@ import {
 
 // ===== DECISION NODE CONFIGURATION =====
 
-export interface DecisionNodeConfig extends LLMNodeConfig {
+export interface DecisionNodeConfig extends LLMNodeConfig, EventStreamingConfig {
     decisionSchema?: any;  // Custom Zod schema for decision output
 }
 

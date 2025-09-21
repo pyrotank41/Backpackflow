@@ -6,6 +6,7 @@ import {
     FinalAnswerNode,
     LLMNodeConfig,
 } from './index';
+import { EventStreamer } from '../events/event-streamer';
 
 // ===== AGENT NODE CONFIGURATION =====
 
@@ -20,6 +21,10 @@ export interface AgentNodeConfig {
     
     // Agent identification
     agentName?: string;
+    
+    // Event Streaming (optional - much cleaner API!)
+    eventStreamer?: EventStreamer;
+    namespace?: string;
 }
 
 // ===== AGENT NODE STORAGE =====
@@ -65,26 +70,35 @@ export class AgentNode extends Node {
         
         this.agentName = config.agentName || 'Agent';
         
+        // Prepare LLM config with event streaming (if provided)
+        const llmConfigWithEvents = {
+            ...config.llmConfig,
+            ...(config.eventStreamer && { 
+                eventStreamer: config.eventStreamer,
+                namespace: config.namespace || this.agentName.toLowerCase()
+            })
+        };
+        
         // Create internal nodes - only pass custom prompts if provided, let nodes use their defaults
         this.decisionNode = new DecisionNode({
-            ...config.llmConfig,
+            ...llmConfigWithEvents,
             ...(config.decisionPrompt && { systemPrompt: config.decisionPrompt })
         });
         
         this.toolParamNode = new ToolParamGenerationNode({
-            ...config.llmConfig,
+            ...llmConfigWithEvents,
             ...(config.paramGenerationPrompt && { systemPrompt: config.paramGenerationPrompt })
         });
         
         this.toolExecutionNode = new ToolExecutionNode({
-            ...(config.llmConfig?.eventStreamer && { 
-                eventStreamer: config.llmConfig.eventStreamer,
-                namespace: config.llmConfig.namespace
+            ...(config.eventStreamer && { 
+                eventStreamer: config.eventStreamer,
+                namespace: config.namespace || this.agentName.toLowerCase()
             })
         });
         
         this.finalAnswerNode = new FinalAnswerNode({
-            ...config.llmConfig,
+            ...llmConfigWithEvents,
             ...(config.finalAnswerPrompt && { systemPrompt: config.finalAnswerPrompt })
         });
         

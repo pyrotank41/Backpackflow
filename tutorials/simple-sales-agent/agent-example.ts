@@ -77,13 +77,14 @@ async function agentExample() {
         llmConfig: {
             instructorClient: instructorClient,  // Explicitly pass the client
             model: 'gpt4.1',
-            temperature: 0.1,
-            // Pass EventStreamer to enable event emission
-            ...(eventStreamer && { 
-                eventStreamer: eventStreamer,
-                namespace: 'sales_agent'
-            })
-        }
+            temperature: 0.1
+        },
+        
+        // Event streaming configuration (much cleaner API! 🎉)
+        ...(eventStreamer && { 
+            eventStreamer: eventStreamer,
+            namespace: 'sales_agent'
+        })
     });
 
     // Prepare the shared storage - much simpler now!
