@@ -1,4 +1,5 @@
 import { BaseLLMNode, LLMNodeConfig } from './base-llm-node';
+import { StreamEventType } from '../events/event-streamer';
 import { 
     FinalAnswerNodeStorage, 
     ChatMessage, 
@@ -34,6 +35,35 @@ Guidelines:
 - If some information wasn't found, mention it politely
 - Use a professional but friendly tone
 - Format the response nicely for readability`;
+    }
+    
+    /**
+     * Stream LLM response and emit chunks as events
+     */
+    private async callLLMWithStreaming(messages: any[]): Promise<string> {
+        // Use the underlying OpenAI client directly for streaming
+        const openaiClient = this.client.client || this.client;
+        
+        const stream = await openaiClient.chat.completions.create({
+            messages,
+            model: this.model,
+            temperature: this.temperature,
+            stream: true
+        });
+
+        let fullResponse = '';
+        
+        for await (const chunk of stream) {
+            const content = chunk.choices[0]?.delta?.content || '';
+            if (content) {
+                fullResponse += content;
+                
+                // Emit chunk event for real-time streaming
+                this.emitEvent(StreamEventType.CHUNK, content);
+            }
+        }
+        
+        return fullResponse;
     }
 
     async prep(shared: FinalAnswerNodeStorage): Promise<unknown> {
@@ -94,30 +124,54 @@ Guidelines:
     async exec(prepRes: any): Promise<unknown> {
         const { conversationHistory, hasToolResults } = prepRes;
 
+        // Emit progress event
+        this.emitEvent(StreamEventType.PROGRESS, { 
+            status: 'generating_final_answer',
+            has_tool_results: hasToolResults
+        });
+
+        let finalConversation: any[];
+        
         if (!hasToolResults) {
             // For direct responses, use a simpler system message
-            const directConversation = [
+            finalConversation = [
                 {
                     role: "system",
                     content: "You are a helpful assistant. Provide a clear, professional response to the user's request."
                 },
                 ...conversationHistory.slice(1) // Skip the tool-focused system message, keep user message
             ];
-
-            const response = await this.callLLMRegular(directConversation);
-            return { 
-                finalAnswer: response.choices[0].message.content,
-                conversationHistory: directConversation
-            };
+        } else {
+            // Use the full conversation history with tool interactions
+            finalConversation = conversationHistory;
         }
 
-        // Use the full conversation history with tool interactions
-        const response = await this.callLLMRegular(conversationHistory);
-
-        return { 
-            finalAnswer: response.choices[0].message.content,
-            conversationHistory: conversationHistory
-        };
+        // Check if we should stream the response
+        if (this.eventStreamer) {
+            // Stream the response
+            const finalAnswer = await this.callLLMWithStreaming(finalConversation);
+            
+            // Emit final event
+            this.emitEvent(StreamEventType.FINAL, { 
+                response_generated: true,
+                response_length: finalAnswer.length,
+                content: finalAnswer
+            });
+            
+            return { 
+                finalAnswer,
+                conversationHistory: finalConversation
+            };
+        } else {
+            // Non-streaming response
+            const response = await this.callLLMRegular(finalConversation);
+            const finalAnswer = response.choices[0].message.content;
+            
+            return { 
+                finalAnswer,
+                conversationHistory: finalConversation
+            };
+        }
     }
 
     async post(shared: FinalAnswerNodeStorage, prepRes: any, execRes: any): Promise<string | undefined> {
@@ -136,10 +190,6 @@ Guidelines:
             ];
             shared.messages = completeConversation;
         }
-        
-        console.log('\n=== FINAL ANSWER ===');
-        console.log(execRes.finalAnswer);
-        console.log('===================\n');
         
         // Return undefined to signal end of flow
         return undefined;

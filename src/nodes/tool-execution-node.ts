@@ -1,5 +1,6 @@
 import { ParallelBatchNode } from '../pocketflow';
 import { ToolRequest } from './mcp-core';
+import { EventStreamer, StreamEventType } from '../events/event-streamer';
 import { 
     ToolExecutionNodeStorage, 
     ToolExecutionResultWithId,
@@ -9,16 +10,33 @@ import {
 // ===== TOOL EXECUTION NODE CONFIGURATION =====
 
 export interface ToolExecutionNodeConfig {
-    // Configuration options can be added here if needed
-    // For now, this node doesn't need LLM capabilities, just MCP execution
+    // Event streaming (optional)
+    eventStreamer?: EventStreamer;
+    namespace?: string;
 }
 
 // ===== TOOL EXECUTION NODE =====
 
 export class ToolExecutionNode extends ParallelBatchNode {
+    // Event streaming properties
+    protected eventStreamer?: EventStreamer;
+    protected namespace: string;
+    
     constructor(config: ToolExecutionNodeConfig = {}) {
         super();
-        // This node doesn't need LLM configuration as it just executes tools
+        
+        // Initialize event streaming
+        this.eventStreamer = config.eventStreamer;
+        this.namespace = config.namespace || this.constructor.name.toLowerCase();
+    }
+    
+    /**
+     * Helper method to emit events safely (only if eventStreamer is available)
+     */
+    protected emitEvent(eventType: StreamEventType, content: any): void {
+        if (this.eventStreamer) {
+            this.eventStreamer.emitEvent(this.namespace, eventType, content, this.constructor.name);
+        }
     }
     
     async prep(shared: ToolExecutionNodeStorage): Promise<unknown[]> {
@@ -56,9 +74,31 @@ export class ToolExecutionNode extends ParallelBatchNode {
         const tool_request = prepRes.tool_request;
         const toolRequestId = prepRes.toolRequestId;
         
-        console.log(`Executing tool ${tool_request.toolName} (ID: ${toolRequestId}):`, tool_request);
+        // Emit progress event
+        this.emitEvent(StreamEventType.PROGRESS, { 
+            status: 'executing_tool',
+            tool: tool_request.toolName,
+            tool_id: toolRequestId
+        });
+        
+        // Tool execution details are now emitted via events instead of console.log
 
         const result = await tool_manager.executeTool(tool_request);
+        
+        // Emit completion event with execution details
+        this.emitEvent(StreamEventType.METADATA, {
+            tool_executed: true,
+            tool: tool_request.toolName,
+            tool_id: toolRequestId,
+            success: result.success,
+            result_size: result.content?.length || 0,
+            execution_request: {
+                toolName: tool_request.toolName,
+                arguments: tool_request.arguments
+            },
+            execution_result: result
+        });
+        
         return {
             toolRequestId: toolRequestId,
             executionResult: result
@@ -80,7 +120,7 @@ export class ToolExecutionNode extends ParallelBatchNode {
             }
         });
         
-        console.log('Tool execution results:', shared.toolExecutionResults);
         return "response_generation";
     }
+    
 }

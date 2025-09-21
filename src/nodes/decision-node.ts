@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { BaseLLMNode, LLMNodeConfig } from './base-llm-node';
+import { StreamEventType } from '../events/event-streamer';
 import { 
     DecisionNodeStorage, 
     ToolRequestWithId, 
@@ -53,6 +54,9 @@ Decision Guidelines:
     }
     
     async exec(prepRes: any): Promise<unknown> {
+        // Emit progress event
+        this.emitEvent(StreamEventType.PROGRESS, { status: 'making_decision' });
+        
         const prep_messages = prepRes.messages.map((m: any) => `${m.role}: ${m.content}`).join("\n");
 
         const messages = [
@@ -81,13 +85,23 @@ Should I call tools or provide the final response?`
             }
         );
 
+        // Emit completion event with decision details
+        this.emitEvent(StreamEventType.METADATA, { 
+            decision_made: decision.action,
+            tool_requests: decision.tool_requests?.length || 0,
+            decision_details: {
+                action: decision.action,
+                tool_requests: decision.tool_requests || []
+            }
+        });
+
         return { decision };
     }
     
     async post(shared: DecisionNodeStorage, prepRes: any, execRes: any): Promise<string> {
         const decision = execRes.decision;
 
-        console.log('Decision:', decision);
+        // Decision details are now emitted via events instead of console.log
         
         // Convert tool requests to include IDs and initialize tracking arrays
         if (decision.action === "tool_call_request" && decision.tool_requests) {

@@ -1,6 +1,7 @@
 import { Node } from '../pocketflow';
 import OpenAI from 'openai';
 import Instructor from '@instructor-ai/instructor';
+import { EventStreamer, StreamEventType } from '../events/event-streamer';
 
 // ===== BASE LLM NODE CONFIGURATION =====
 
@@ -12,6 +13,10 @@ export interface LLMNodeConfig {
     
     // Prompt Configuration
     systemPrompt?: string;   // Override default system prompt
+    
+    // Event Streaming (Optional)
+    eventStreamer?: EventStreamer;  // If provided, node will emit events
+    namespace?: string;             // Namespace for events (default: node class name)
     
     // Additional node-specific config can be added by extending classes
     [key: string]: any;
@@ -38,18 +43,35 @@ export abstract class BaseLLMNode extends Node {
     protected model: string;
     protected temperature: number;
     
+    // Event streaming properties
+    protected eventStreamer?: EventStreamer;
+    public namespace: string;
+    
     constructor(config: LLMNodeConfig = {}) {
         super();
         this.client = config.instructorClient || getDefaultInstructorClient();
         this.systemPrompt = config.systemPrompt || this.getDefaultSystemPrompt();
         this.model = config.model || 'gpt-4o';
         this.temperature = config.temperature ?? 0.1;
+        
+        // Initialize event streaming
+        this.eventStreamer = config.eventStreamer;
+        this.namespace = config.namespace || this.constructor.name.toLowerCase();
     }
     
     /**
      * Each node must define its default system prompt
      */
     protected abstract getDefaultSystemPrompt(): string;
+    
+    /**
+     * Helper method to emit events safely (only if eventStreamer is available)
+     */
+    protected emitEvent(eventType: StreamEventType, content: any): void {
+        if (this.eventStreamer) {
+            this.eventStreamer.emitEvent(this.namespace, eventType, content, this.constructor.name);
+        }
+    }
     
     /**
      * Helper method to create LLM messages with system prompt
@@ -94,4 +116,5 @@ export abstract class BaseLLMNode extends Node {
             temperature: this.temperature
         });
     }
+    
 }

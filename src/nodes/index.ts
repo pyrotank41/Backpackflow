@@ -9,9 +9,15 @@ export { FinalAnswerNode } from './final-answer-node';
 export { ToolParamGenerationNode } from './tool-param-generation-node';
 export { ToolExecutionNode } from './tool-execution-node';
 
+// Export high-level agent node
+export { AgentNode } from './agent-node';
+
 // Export base classes and types
 export * from './base-llm-node';
 export * from './types';
 
 // Export MCP core functionality
 export * from './mcp-core';
+
+// Export event streaming
+export { EventStreamer, StreamEventType } from '../events/event-streamer';

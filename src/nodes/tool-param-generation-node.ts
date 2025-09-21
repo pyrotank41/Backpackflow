@@ -1,5 +1,6 @@
 import { ParallelBatchNode } from '../pocketflow';
 import { LLMNodeConfig, getDefaultInstructorClient } from './base-llm-node';
+import { EventStreamer, StreamEventType } from '../events/event-streamer';
 import { 
     ToolParamNodeStorage, 
     ToolRequestWithId, 
@@ -20,6 +21,10 @@ export class ToolParamGenerationNode extends ParallelBatchNode {
     private systemPrompt: string;
     private model: string;
     private temperature: number;
+    
+    // Event streaming properties
+    protected eventStreamer?: EventStreamer;
+    protected namespace: string;
 
     constructor(config: ToolParamNodeConfig = {}) {
         super();
@@ -27,10 +32,23 @@ export class ToolParamGenerationNode extends ParallelBatchNode {
         this.systemPrompt = config.systemPrompt || this.getDefaultSystemPrompt();
         this.model = config.model || 'gpt-4o';
         this.temperature = config.temperature ?? 0.1;
+        
+        // Initialize event streaming
+        this.eventStreamer = config.eventStreamer;
+        this.namespace = config.namespace || this.constructor.name.toLowerCase();
     }
     
     protected getDefaultSystemPrompt(): string {
         return `You are a tool parameter generation agent. You will be given a tool name and a brief description of the tool. You will need to generate the parameters for the tool.`;
+    }
+    
+    /**
+     * Helper method to emit events safely (only if eventStreamer is available)
+     */
+    protected emitEvent(eventType: StreamEventType, content: any): void {
+        if (this.eventStreamer) {
+            this.eventStreamer.emitEvent(this.namespace, eventType, content, this.constructor.name);
+        }
     }
 
     // this node will generate the parameters for the tool call using the tool name
@@ -84,6 +102,13 @@ Required parameters: ${JSON.stringify(Tool.inputSchema.properties, null, 2)}
         const toolParamSchema = prepRes.toolParamSchema;
         const toolRequest = prepRes.toolRequest;
 
+        // Emit progress event
+        this.emitEvent(StreamEventType.PROGRESS, { 
+            status: 'generating_parameters',
+            tool: toolRequest.toolName,
+            tool_id: toolRequest.id
+        });
+
         const param_generation_response = await this.client.chat.completions.create({
             messages: param_generation_messages,
             model: this.model,
@@ -94,15 +119,26 @@ Required parameters: ${JSON.stringify(Tool.inputSchema.properties, null, 2)}
             temperature: this.temperature
         });
 
-        console.log(`Tool param generation response for ${toolRequest.toolName} (ID: ${toolRequest.id}):`, param_generation_response);
+        // Parameter generation details are now emitted via events instead of console.log
         
         // Remove _meta field and only store essential data
         const { _meta, ...cleanParameters } = param_generation_response;
-        return {
+        const result = {
             toolRequestId: toolRequest.id,
             parameters: cleanParameters,
             serverId: prepRes.tool_in_use.serverId
         };
+        
+        // Emit completion event with parameter details
+        this.emitEvent(StreamEventType.METADATA, {
+            parameters_generated: true,
+            tool: toolRequest.toolName,
+            tool_id: toolRequest.id,
+            parameter_count: Object.keys(cleanParameters).length,
+            generated_parameters: cleanParameters
+        });
+        
+        return result;
     }
     
     async post(shared: ToolParamNodeStorage, prepRes: any[], execRes: any[]): Promise<string> {
@@ -121,7 +157,7 @@ Required parameters: ${JSON.stringify(Tool.inputSchema.properties, null, 2)}
             }
         });
         
-        console.log('Generated parameters for all tools:', shared.toolParameters);
+        // Parameter generation summary is now emitted via events instead of console.log
         return "tool_execution";
     }
 }
