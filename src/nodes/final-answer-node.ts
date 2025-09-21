@@ -1,4 +1,4 @@
-import { BaseLLMNode, LLMNodeConfig } from './base-llm-node';
+import { BaseLLMNode, LLMNodeConfig, EventStreamingConfig } from './base-llm-node';
 import { StreamEventType } from '../events/event-streamer';
 import { 
     FinalAnswerNodeStorage, 
@@ -10,7 +10,7 @@ import {
 
 // ===== FINAL ANSWER NODE CONFIGURATION =====
 
-export interface FinalAnswerNodeConfig extends LLMNodeConfig {
+export interface FinalAnswerNodeConfig extends LLMNodeConfig, EventStreamingConfig {
     // Additional config options can be added here
     includeToolInteractionInHistory?: boolean;  // Default: true
 }

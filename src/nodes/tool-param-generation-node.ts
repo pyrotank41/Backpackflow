@@ -1,5 +1,5 @@
 import { ParallelBatchNode } from '../pocketflow';
-import { LLMNodeConfig } from './base-llm-node';
+import { LLMNodeConfig, EventStreamingConfig } from './base-llm-node';
 import { EventStreamer, StreamEventType } from '../events/event-streamer';
 import { 
     ToolParamNodeStorage, 
@@ -10,7 +10,7 @@ import {
 
 // ===== TOOL PARAM GENERATION NODE CONFIGURATION =====
 
-export interface ToolParamNodeConfig extends LLMNodeConfig {
+export interface ToolParamNodeConfig extends LLMNodeConfig, EventStreamingConfig {
     // Additional config options can be added here
 }
 

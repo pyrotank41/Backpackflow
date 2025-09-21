@@ -1,6 +1,7 @@
 import { ParallelBatchNode } from '../pocketflow';
 import { ToolRequest } from './mcp-core';
 import { EventStreamer, StreamEventType } from '../events/event-streamer';
+import { EventStreamingConfig } from './base-llm-node';
 import { 
     ToolExecutionNodeStorage, 
     ToolExecutionResultWithId,
@@ -9,10 +10,8 @@ import {
 
 // ===== TOOL EXECUTION NODE CONFIGURATION =====
 
-export interface ToolExecutionNodeConfig {
-    // Event streaming (optional)
-    eventStreamer?: EventStreamer;
-    namespace?: string;
+export interface ToolExecutionNodeConfig extends EventStreamingConfig {
+    // Additional config options can be added here
 }
 
 // ===== TOOL EXECUTION NODE =====
@@ -25,7 +24,7 @@ export class ToolExecutionNode extends ParallelBatchNode {
     constructor(config: ToolExecutionNodeConfig = {}) {
         super();
         
-        // Initialize event streaming
+        // Initialize event streaming (now using clean EventStreamingConfig)
         this.eventStreamer = config.eventStreamer;
         this.namespace = config.namespace || this.constructor.name.toLowerCase();
     }
