@@ -1,0 +1,50 @@
+{
+  "name": "pocketflow-mcp-cookbook",
+  "version": "1.0.0",
+  "description": "MCP (Model Context Protocol) integration cookbook for PocketFlow",
+  "main": "mcp-agent.js",
+  "scripts": {
+    "start": "npx ts-node mcp-agent.ts",
+    "demo": "npx ts-node mcp-demo.ts",
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "dev": "npx ts-node --watch mcp-agent.ts",
+    "install-mcp-servers": "npm install -g @modelcontextprotocol/server-filesystem @modelcontextprotocol/server-memory"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "pocketflow",
+    "ai",
+    "agents",
+    "tools",
+    "typescript"
+  ],
+  "author": "PocketFlow Community",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@instructor-ai/instructor": "^1.0.0",
+    "zod": "^3.22.0",
+    "dotenv": "^16.0.0",
+    "openai": "^4.0.0",
+    "readline": "^1.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "ts-node": "^10.9.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-repo/pocketflow.git",
+    "directory": "tutorials/pocketflow-cookbook-ts/mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/your-repo/pocketflow/issues"
+  },
+  "homepage": "https://github.com/your-repo/pocketflow/tree/main/tutorials/pocketflow-cookbook-ts/mcp#readme"
+}

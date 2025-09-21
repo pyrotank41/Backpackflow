@@ -19,6 +19,9 @@ export * from './types/events';
 // Storage capabilities
 export * from './storage/capabilities';
 
+// Utilities (terminal interface, streaming chatbot, etc.)
+export * from './utils';
+
 // Examples
 export * from './examples';
 
