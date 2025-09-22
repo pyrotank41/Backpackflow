@@ -1,11 +1,13 @@
 import { ParallelBatchNode } from '../pocketflow';
 import { LLMNodeConfig, EventStreamingConfig } from './base-llm-node';
 import { EventStreamer, StreamEventType } from '../events/event-streamer';
+import { z } from 'zod';
 import { 
     ToolParamNodeStorage, 
     ToolRequestWithId, 
     ToolParamWithId,
-    jsonSchemaToZod 
+    jsonSchemaToZod, 
+    getToolContext
 } from './types';
 
 // ===== TOOL PARAM GENERATION NODE CONFIGURATION =====
@@ -43,7 +45,7 @@ export class ToolParamGenerationNode extends ParallelBatchNode {
     }
     
     protected getDefaultSystemPrompt(): string {
-        return `You are a tool parameter generation agent. You will be given a tool name and a brief description of the tool. You will need to generate the parameters for the tool.`;
+        return `You are a tool parameter generation agent. You will be given a tool name and a brief descriptionof why the tool is being called. You will need to generate the parameters for the tool.`;
     }
     
     /**
@@ -69,8 +71,8 @@ export class ToolParamGenerationNode extends ParallelBatchNode {
                     throw new Error(`Tool ${toolRequest.toolName} not found`);
                 }
 
-                // Create a Zod schema from the tool's input schema using proper conversion
-                const toolParamSchema = jsonSchemaToZod(Tool.inputSchema, (Tool.inputSchema as any).$defs || {});
+                let toolParamSchema = Tool.inputSchema;
+                
 
                 const user_prompt = `
 You are a tool parameter generation agent. You will be given a tool name and a brief description of the tool. You will need to generate the parameters for the tool.
@@ -79,13 +81,24 @@ Tool name: ${toolRequest.toolName}
 Tool description: ${Tool.description}
 Tool parameter brief (what we want from the tool): ${toolRequest.brief}
 
-Required parameters: ${JSON.stringify(Tool.inputSchema.properties, null, 2)}
+Required parameters: ${JSON.stringify(Tool.inputSchema, null, 2)}
+
+response format: json
 `;
 
-                const param_generation_messages = [
-                    { role: 'system', content: this.systemPrompt },
-                    { role: 'user', content: user_prompt }
-                ]
+                // const param_generation_messages = [
+                //     { role: 'system', content: this.systemPrompt },
+                //     { role: 'user', content: user_prompt }
+                // ]
+
+                // use the shared.messages array, add the user_prompt to the end of the array, replace the system prompt with this.systemPrompt
+                const param_generation_messages = [...(shared.messages || []), { role: 'user', content: user_prompt }];
+                if (param_generation_messages[0].role === "system") {
+                    param_generation_messages[0].content = this.systemPrompt;
+                }
+                else {
+                    param_generation_messages.unshift({ role: "system", content: this.systemPrompt });
+                }
 
                 return {
                     param_generation_messages: param_generation_messages, 
@@ -116,20 +129,18 @@ Required parameters: ${JSON.stringify(Tool.inputSchema.properties, null, 2)}
         const param_generation_response = await this.client.chat.completions.create({
             messages: param_generation_messages,
             model: this.model,
-            response_model: {
-                schema: toolParamSchema,
-                name: "ToolParamGeneration"
-            },
+            // response_model: toolParamSchema, // Use Zod schema directly
             temperature: this.temperature
         });
+        console.log("Param generation response: " + JSON.stringify(param_generation_response.choices[0].message.content, null, 2));
+        const param_generation_response_content = JSON.parse(param_generation_response.choices[0].message.content);
+        console.log("Param generation response content: " + JSON.stringify(param_generation_response_content, null, 2));
 
         // Parameter generation details are now emitted via events instead of console.log
         
-        // Remove _meta field and only store essential data
-        const { _meta, ...cleanParameters } = param_generation_response;
         const result = {
             toolRequestId: toolRequest.id,
-            parameters: cleanParameters,
+            parameters: param_generation_response_content,
             serverId: prepRes.tool_in_use.serverId
         };
         
@@ -138,8 +149,8 @@ Required parameters: ${JSON.stringify(Tool.inputSchema.properties, null, 2)}
             parameters_generated: true,
             tool: toolRequest.toolName,
             tool_id: toolRequest.id,
-            parameter_count: Object.keys(cleanParameters).length,
-            generated_parameters: cleanParameters
+            parameter_count: Object.keys(param_generation_response_content).length,
+            generated_parameters: param_generation_response_content
         });
         
         return result;
@@ -160,8 +171,42 @@ Required parameters: ${JSON.stringify(Tool.inputSchema.properties, null, 2)}
                 req.status = 'param_generated';
             }
         });
+
+        if (shared.toolRequests && shared.toolRequests.length > 0) {
+            // Add assistant message with tool calls
+            const toolCalls = shared.toolRequests.map((req: ToolRequestWithId) => {
+                const context = getToolContext(req.id, shared);
+                return {
+                    id: req.id, // Use real tc_ IDs (39 chars, under OpenAI 40 char limit)
+                    type: "function" as const,
+                    function: {
+                        name: req.toolName,
+                        arguments: JSON.stringify(context.params?.parameters || {})
+                    }
+                };
+            });
+
+            if (shared.messages === undefined) {
+                shared.messages = [];
+            }
+
+            // add the tool call to the last message, if its an assistant message
+            if (shared.messages[shared.messages.length - 1].role === "assistant") {
+                console.log("Adding tool calls to last assistant message");
+                shared.messages[shared.messages.length - 1].tool_calls = toolCalls;
+            }
+            else {
+                console.log("Adding new assistant message with tool calls");
+                shared.messages?.push({
+                    role: "assistant",
+                    content: "I'll help you find that information using our available tools.",
+                    tool_calls: toolCalls
+                });
+            }
+        }
         
         // Parameter generation summary is now emitted via events instead of console.log
         return "tool_execution";
     }
 }
+ 

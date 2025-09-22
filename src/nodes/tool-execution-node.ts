@@ -118,8 +118,17 @@ export class ToolExecutionNode extends ParallelBatchNode {
                 req.status = hasResult.executionResult.success ? 'completed' : 'failed';
             }
         });
+
+        // Add tool responses
+        shared.toolExecutionResults?.forEach((result: ToolExecutionResultWithId) => {
+            shared.messages?.push({
+                role: "tool",
+                tool_call_id: result.toolRequestId, // Use real tc_ IDs
+                content: JSON.stringify(result.executionResult.content)
+            });
+        });
         
-        return "response_generation";
+        return "decision";
     }
     
 }
