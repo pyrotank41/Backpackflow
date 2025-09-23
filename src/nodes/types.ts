@@ -49,6 +49,8 @@ export interface DecisionCapable {
     toolRequests?: ToolRequestWithId[];
     toolParameters?: ToolParamWithId[];
     toolExecutionResults?: ToolExecutionResultWithId[];
+    turnCount?: number;
+    maxTurns?: number;
 }
 
 export interface ConversationCapable {
@@ -58,8 +60,8 @@ export interface ConversationCapable {
 
 // Combined storage types for each node
 export type DecisionNodeStorage = BaseStorage & MCPCapable & DecisionCapable & ConversationCapable;
-export type ToolParamNodeStorage = BaseStorage & MCPCapable & DecisionCapable;
-export type ToolExecutionNodeStorage = BaseStorage & MCPCapable & DecisionCapable;
+export type ToolParamNodeStorage = BaseStorage & MCPCapable & DecisionCapable & ConversationCapable;
+export type ToolExecutionNodeStorage = BaseStorage & MCPCapable & DecisionCapable & ConversationCapable;
 export type FinalAnswerNodeStorage = BaseStorage & MCPCapable & DecisionCapable & ConversationCapable;
 
 // ===== UTILITY FUNCTIONS =====

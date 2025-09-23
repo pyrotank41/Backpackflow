@@ -67,21 +67,23 @@ Guidelines:
     }
 
     async prep(shared: FinalAnswerNodeStorage): Promise<unknown> {
-        const originalRequest = shared.messages?.[0]?.content || '';
         const toolResults = shared.toolExecutionResults || [];
         const hasToolResults = toolResults.length > 0;
 
+        // reset the decison count
+        shared.turnCount = 0;
+
         // Construct full OpenAI conversation format
-        const conversationHistory: ChatMessage[] = [
-            {
-                role: "system",
-                content: this.systemPrompt
-            },
-            {
-                role: "user",
-                content: originalRequest
-            }
-        ];
+        if (shared.messages === undefined) {
+            shared.messages = [];
+        }
+        if (shared.messages.length > 0 && shared.messages[0].role === "system") {
+            shared.messages[0].content = this.systemPrompt;
+        }
+        else {
+            shared.messages = [{ role: "system", content: this.systemPrompt }, ...(shared.messages)]
+        }
+        const conversationHistory: ChatMessage[] = shared.messages;
 
         // Add tool interaction to conversation if tools were used and option is enabled
         if (hasToolResults && shared.toolRequests && shared.toolRequests.length > 0 && this.includeToolInteractionInHistory) {
@@ -112,11 +114,11 @@ Guidelines:
                     content: JSON.stringify(result.executionResult.content)
                 });
             });
-        }
+        } 
+        
 
         return {
             conversationHistory,
-            originalRequest,
             hasToolResults
         };
     }
@@ -132,19 +134,8 @@ Guidelines:
 
         let finalConversation: any[];
         
-        if (!hasToolResults) {
-            // For direct responses, use a simpler system message
-            finalConversation = [
-                {
-                    role: "system",
-                    content: "You are a helpful assistant. Provide a clear, professional response to the user's request."
-                },
-                ...conversationHistory.slice(1) // Skip the tool-focused system message, keep user message
-            ];
-        } else {
-            // Use the full conversation history with tool interactions
-            finalConversation = conversationHistory;
-        }
+        finalConversation = conversationHistory;
+  
 
         // Check if we should stream the response
         if (this.eventStreamer) {
@@ -190,6 +181,10 @@ Guidelines:
             ];
             shared.messages = completeConversation;
         }
+
+        
+
+        // console.log("messages: " + JSON.stringify(shared.messages, null, 2));
         
         // Return undefined to signal end of flow
         return undefined;

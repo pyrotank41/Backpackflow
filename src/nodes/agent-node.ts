@@ -22,6 +22,9 @@ export interface AgentNodeConfig {
     // Agent identification
     agentName?: string;
     
+    // Decision loop control
+    maxTurns?: number;  // Maximum number of decision loop turns before forcing final answer
+    
     // Event Streaming (optional - much cleaner API!)
     eventStreamer?: EventStreamer;
     namespace?: string;
@@ -82,7 +85,8 @@ export class AgentNode extends Node {
         // Create internal nodes - only pass custom prompts if provided, let nodes use their defaults
         this.decisionNode = new DecisionNode({
             ...llmConfigWithEvents,
-            ...(config.decisionPrompt && { systemPrompt: config.decisionPrompt })
+            ...(config.decisionPrompt && { systemPrompt: config.decisionPrompt }),
+            ...(config.maxTurns && { maxTurns: config.maxTurns })
         });
         
         this.toolParamNode = new ToolParamGenerationNode({
@@ -96,6 +100,7 @@ export class AgentNode extends Node {
                 namespace: config.namespace || this.agentName.toLowerCase()
             })
         });
+
         
         this.finalAnswerNode = new FinalAnswerNode({
             ...llmConfigWithEvents,
@@ -107,11 +112,11 @@ export class AgentNode extends Node {
     }
     
     private setupInternalFlow(): void {
-        // Connect the nodes
+        // Connect the nodes with reflection loop
         this.decisionNode.on("tool_call_request", this.toolParamNode);
         this.decisionNode.on("generate_final_response", this.finalAnswerNode);
         this.toolParamNode.on("tool_execution", this.toolExecutionNode);
-        this.toolExecutionNode.on("response_generation", this.finalAnswerNode);
+        this.toolExecutionNode.on("decision", this.decisionNode);
         
         // Create the flow
         this.flow = new Flow(this.decisionNode);
@@ -181,7 +186,9 @@ export class AgentNode extends Node {
             toolRequestsCount: shared.toolRequests?.length || 0,
             toolParametersCount: shared.toolParameters?.length || 0,
             toolExecutionResultsCount: shared.toolExecutionResults?.length || 0,
-            hasFinalAnswer: !!shared.finalAnswer
+            hasFinalAnswer: !!shared.finalAnswer,
+            turnCount: (shared as any).turnCount || 0,
+            maxTurns: (shared as any).maxTurns || 10
         };
     }
     
